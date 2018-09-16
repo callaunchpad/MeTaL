@@ -4,6 +4,7 @@
 We strongly encourage building dependencies within a virtual environment. To use the Python virtual environments, follow [this guide on python environments](https://uoa-eresearch.github.io/eresearch-cookbook/recipe/2014/11/26/python-virtual-env/), or to use Conda environments, follow [this guide on conda environments](https://conda.io/docs/user-guide/tasks/manage-environments.html).
 
 Once inside your environment, from the base directory of this repo, run
+
 '''
 pip install -r requirements.txt
 '''
@@ -11,6 +12,7 @@ This should add any required dependencies to your virtual environment.
 
 ## Contributing Code and Workflow
 When contributing code, make sure you code is documented. Each file should have a header explaining the contents within a few sentences, as well as the names of all contributing authors. Each class and function should be documented with the following style:
+
 '''
 class bar():
   """ One line description on bar class"""
