@@ -19,8 +19,6 @@ def FeedForward(self, _input, hparams, name="ffn"):
 		@Author: Arsh Zahed
 		"""
 
-		# Placeholder for input
-
 		# We iteratively nest the layers
 		net = _input
 		hidden_sizes = hparams['hidden_sizes']
