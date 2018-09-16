@@ -126,7 +126,7 @@ def DynamicRNN(self, _input, hparams, initial_state=None, name="lstm"):
 
 def CNN(self, _input, hparams, name="cnn"):
 	"""
-	Builds a Convolutional NN with a flattened output
+	Builds a Convolutional Neural Network with a flattened output
 
 	Args:
 		_input: Tensor of shape [None, image_height, image_width, channels]
