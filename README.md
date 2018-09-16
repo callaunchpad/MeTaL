@@ -11,6 +11,8 @@ pip install -r requirements.txt
 This should add any required dependencies to your virtual environment.
 
 ## Contributing Code and Workflow
+**Please make sure all commits have meaningful comments!**
+
 When contributing code, make sure you code is documented. Each file should have a header explaining the contents within a few sentences, as well as the names of all contributing authors. Each class, function and method should be documented with the following style:
 
 ```
