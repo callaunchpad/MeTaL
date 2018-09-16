@@ -9,7 +9,7 @@ TODO: Build tests
 import tensorflow as tf
 
 
-def FeedForward(self, _input, hparams, name="ffn"):
+def FeedForward(_input, hparams, name="ffn"):
 	"""
 	Builds a Feed Forward NN with linear output
 
@@ -79,7 +79,7 @@ def MakeRNNCell(rnn_layer_sizes,
 	return cell
 
 
-def DynamicRNN(self, _input, hparams, initial_state=None, name="lstm"):
+def DynamicRNN(_input, hparams, initial_state=None, name="lstm"):
 	"""
 	Builds andand executes Dynamic RNN with specified activation
 
@@ -112,19 +112,21 @@ def DynamicRNN(self, _input, hparams, initial_state=None, name="lstm"):
 		hparams['activation'] = tf.tanh
 
 	# Build RNN Cell
-	rnn_cell = MakeRNNCell(hparams['rnn_layer_sizes'],
-		                   hparams['dropout_keep_prob'],
-		                   hparams['attn_length'],
-		                   hparams['base_cell'],
-		                   hparams['residual_connections'],
-		                   hparams['activation'])
+	with tf.variable_scope(name):
+		rnn_cell = MakeRNNCell(hparams['rnn_layer_sizes'],
+			                   hparams['dropout_keep_prob'],
+			                   hparams['attn_length'],
+			                   hparams['base_cell'],
+			                   hparams['residual_connections'],
+			                   hparams['activation'])
 
-	outputs, states = tf.nn.dyanimc_rnn(rnn_cell, _input, initial_state)
+	outputs, states = tf.nn.dynamic_rnn(rnn_cell, _input, initial_state=initial_state,
+										dtype=_input.dtype)
 
 	return outputs, states
 
 
-def CNN(self, _input, hparams, name="cnn"):
+def CNN(_input, hparams, name="cnn"):
 	"""
 	Builds a Convolutional Neural Network with a flattened output
 
