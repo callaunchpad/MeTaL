@@ -13,6 +13,15 @@ This should add any required dependencies to your virtual environment.
 ## Contributing Code and Workflow
 **Please make sure all commits have meaningful comments!**
 
+Do not use `git add .` to add files. This adds files that should potentially be untracked. Instead, use
+```
+git commit -am "commit message"
+```
+This adds and commits all modified files that are tracked. If you need to track new files, then use
+```
+git add new_file_name_here
+```
+
 When contributing code, make sure you code is documented. Each file should have a header explaining the contents within a few sentences, as well as the names of all contributing authors. Each class, function and method should be documented with the following style:
 
 ```
