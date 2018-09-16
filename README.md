@@ -5,15 +5,15 @@ We strongly encourage building dependencies within a virtual environment. To use
 
 Once inside your environment, from the base directory of this repo, run
 
-'''
+```
 pip install -r requirements.txt
-'''
+```
 This should add any required dependencies to your virtual environment.
 
 ## Contributing Code and Workflow
 When contributing code, make sure you code is documented. Each file should have a header explaining the contents within a few sentences, as well as the names of all contributing authors. Each class and function should be documented with the following style:
 
-'''
+```
 class bar():
   """ One line description on bar class"""
   def foo(arg1, arg2):
@@ -28,7 +28,7 @@ class bar():
     @Authors: Names of authors, comma seperated
     """
     ...
-'''
+```
 If you are contributing to a file for the first time, please be sure to add your name to all locations where you contributed.
 
 Additionally, please restrict your lines to 80 characters in length. to continue to a new line, use parentheses. The following lines should start where the column after the openning parenthese. Here is an example (also an example of KL Divergence for a variational autoencoder).
