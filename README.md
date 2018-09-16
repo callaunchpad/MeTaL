@@ -29,10 +29,11 @@ class bar():
     """
     ...
 ```
-Note that if the function is part of a class, the `self` argument is not needed.
+Note that if the function is part of a class, the `self` argument does not need to be documented.
+
 If you are contributing to a file for the first time, please be sure to add your name to all locations where you contributed.
 
-Additionally, please restrict your lines to 80 characters in length. to continue to a new line, use parentheses. The following lines should start where the column after the openning parenthese. Here is an example (also an example of KL Divergence for a variational autoencoder).
+Additionally, please restrict your lines to 80 characters in length. to continue to a new line, use parentheses. The following lines should start the column after the openning parenthese. Here is an example (also an example of KL Divergence for a variational autoencoder).
 '''
 latent_loss = -0.5 * tf.reduce_sum(1 + self.z_log_sigma_sq 
                                    - tf.square(self.z_mean) 
