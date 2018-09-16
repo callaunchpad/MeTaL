@@ -16,6 +16,8 @@ def FeedForward(self, _input, hparams, name="ffn"):
 				'output_size': Dimensionality of output
 				'hidden_sizes': List of hidden layer sizes
 				'activations': List of activation functions for each layer
+		Returns:
+			Tensor of shape [None, output_size]
 		@Author: Arsh Zahed
 		"""
 
@@ -40,7 +42,7 @@ def LSTM(self, _input, hparams, name="lstm"):
 
 def CNN(self, _input, hparams, name="cnn"):
 	"""
-	Builds a Convolutional NN with a flattened output
+	Builds a Convolutional Neural Network with a flattened output
 
 	Args:
 		_input: Tensor of shape [None, image_height, image_width, channels]
@@ -50,6 +52,8 @@ def CNN(self, _input, hparams, name="cnn"):
 			'stride_lengths': List of strides for each layer
 			'padding_types': List of padding for each layer
 			'activations': List of activation functions for each layer
+	Returns:
+		Tensor of shape [None, output_size]
 	@Author: Yi Liu
 	"""
 
