@@ -58,3 +58,5 @@ If you are not a member of the MeTaL team, feel free to submit pull requests and
 ## Code Structure
 ### Algorithms:
 This contains any code pertaining to learning/neural network algorithms and architectures.
+### Tests:
+Contains code for testing neural network architectures
