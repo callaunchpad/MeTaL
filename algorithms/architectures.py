@@ -39,11 +39,11 @@ def FeedForward(_input, hparams, name="ffn"):
 
 
 def MakeRNNCell(rnn_layer_sizes,
-                  dropout_keep_prob=1.0,
-                  attn_length=0,
-                  base_cell=tf.contrib.rnn.BasicLSTMCell,
-                  residual_connections=False,
-                  activation=tf.nn.tanh):
+                dropout_keep_prob=1.0,
+                attn_length=0,
+                base_cell=tf.contrib.rnn.BasicLSTMCell,
+                residual_connections=False,
+                activation=tf.nn.tanh):
 	"""
 	Makes an RNN cell from the given hyperparameters. (From Magenta)
 

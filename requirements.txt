@@ -1,1 +1,2 @@
 tensorflow >= 1.10
+gym == 0.7.4

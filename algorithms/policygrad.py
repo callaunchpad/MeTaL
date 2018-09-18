@@ -1,13 +1,148 @@
 import tensorflow as tf
+from algorithms import architectures
+
+
+def discount_and_normalize_rewards(episode_rewards):
+    """
+    Discounts and normalizes rewards from an episode
+
+    TODO: Review and finish
+    """
+
+    discounted_episode_rewards = np.zeros_like(episode_rewards)
+    cumulative = 0.0
+    for i in reversed(range(len(episode_rewards))):
+        cumulative = cumulative * gamma + episode_rewards[i]
+        discounted_episode_rewards[i] = cumulative
+    
+    mean = np.mean(discounted_episode_rewards)
+    std = np.std(discounted_episode_rewards)
+    discounted_episode_rewards = (discounted_episode_rewards - mean) / (std)
+    
+    return discounted_episode_rewards
+
+
+def SampleGaussian(means, log_simga_sqs):
+    """
+    Differentiably samples from Guassian using reparameterization trick.
+
+    Args:
+        means: Tensor of mean values
+        log_sigma_sqs: Tensor of the logarithms of the variances
+    Returs:
+        Tensor of sampled gussian
+    @Authors: Arsh Zahed
+    """
+    unit = tf.random_norm(means.shape, 0, 1)
+    with_var = tf.sqrt(tf.exp(log_simga_sqs)) * eps
+    return (with_var + means)
 
 
 class PGFFNN:
-    """
-    TODO
+    """Policy Gradient agent with only FFNN parameters
+
+    Note: Minimal variance reduction, no natural gradient or trust-region optimization
     """
 
-    def __init__(self):
-        return
+    def __init__(self, env, state_size, action_size, is_discrete, hparams):
+        """
+        Builds the graph for Feed Forward NN Policy Gradient agent 
+
+        Args:
+            state_size: Integer size of state Tensor
+            action_size: Integer size of action Tensor
+            is_discrete: Boolean, True if discrete space, False if continuous
+            hparams: Dictionary of hyperparameters
+                'learning_rate': Learning rate
+                'output_size': Dimensionality of output
+                'hidden_sizes': List of hidden layer sizes
+                'activations': List of activation functions for each layer
+        Returns:
+            Output tensor of shape [None, output_size]
+        @Authors: Arsh Zahed
+        """
+        self.env = env
+
+        self.input_ = tf.placeholder(tf.float32, [None, state_size], name="input_")
+        self.actions = tf.placeholder(tf.int32, [None, action_size], name="actions")
+        self.discounted_episode_rewards_ = tf.placeholder(tf.float32, [None,], 
+                                                     name="discounted_episode_rewards")
+
+        self.mean_reward_ = tf.placeholder(tf.float32 , name="mean_reward")
+        pre_distr = architectures.FeedForward(self.input_, hparams, name='ffn_policygrad')
+
+        if is_discrete:
+            self.action_distribution = tf.nn.softmax(pre_distr)
+
+            with tf.name_scope("loss"):
+                neg_log_prob = tf.nn.softmax_cross_entropy_with_logits_v2(logits = self.action_distribution, 
+                                                                          labels = self.actions)
+                self.loss = tf.reduce_mean(neg_log_prob * self.discounted_episode_rewards_) 
+                tf.summary.scalar('loss', self.loss)
+        else:
+            # TODO
+            pass    
+
+        with tf.name_scope("train"):
+            self.train_opt = tf.train.AdamOptimizer(hparams['learning_rate']).minimize(self.loss)
+
+
+    def train(self, sess, num_ep ):
+        for episode in range(num_ep):
+        
+            episode_rewards_sum = 0
+
+            # Launch the game
+            state = self.env.reset()
+            
+            self.env.render()
+               
+            while True:
+                # Choose action a, remember WE'RE NOT IN A DETERMINISTIC ENVIRONMENT, 
+                # WE'RE OUTPUT PROBABILITIES.
+                action_probability_distribution = sess.run(self.action_distribution, 
+                                                           feed_dict={self.input_: state.reshape([1,4])})
+                # select action w.r.t the actions prob
+                action = np.random.choice(range(action_probability_distribution.shape[1]), 
+                                          p=action_probability_distribution.ravel())
+
+                # Perform a
+                new_state, reward, done, info = self.env.step(action)
+                # Store s, a, r
+                episode_states.append(state)
+
+                # For actions because we output only one (the index) 
+                # we need 2 (1 is for the action taken)
+                action_ = np.zeros(action_size)
+                action_[action] = 1
+                
+                episode_actions.append(action_)
+                episode_rewards.append(reward)
+
+                if done:
+                    # Calculate sum reward
+                    episode_rewards_sum = np.sum(episode_rewards)
+                    allRewards.append(episode_rewards_sum)
+                    total_rewards = np.sum(allRewards)
+                    # Mean reward
+                    mean_reward = np.divide(total_rewards, episode+1)
+                    maximumRewardRecorded = np.amax(allRewards)
+                    print("==========================================")
+                    print("Episode: ", episode)
+                    print("Reward: ", episode_rewards_sum)
+                    print("Mean Reward", mean_reward)
+                    print("Max reward so far: ", maximumRewardRecorded)
+
+                    # Calculate discounted reward
+                    discounted_episode_rewards = discount_and_normalize_rewards(episode_rewards)
+
+                    loss_, _ = sess.run(
+                        [self.loss, self.train_opt],
+                        feed_dict={self.input_: np.vstack(np.array(episode_states)),
+                        self.actions: np.vstack(np.array(episode_actions)),
+                        self.discounted_episode_rewards_: discounted_episode_rewards}
+                        )
+
 
 
 class PGLSTM:
@@ -18,6 +153,7 @@ class PGLSTM:
     def __init__(self):
         return
 
+ 
 
 class PGConvNetwork:
     """
