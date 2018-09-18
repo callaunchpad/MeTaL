@@ -9,7 +9,7 @@ TODO: Build tests
 import tensorflow as tf
 
 
-def FeedForward(_input, hparams, name="ffn"):
+def feed_forward(_input, hparams, name="ffn"):
     """
     Builds a Feed Forward NN with linear output
 
@@ -38,12 +38,12 @@ def FeedForward(_input, hparams, name="ffn"):
     return y_hat
 
 
-def MakeRNNCell(rnn_layer_sizes,
-                dropout_keep_prob=1.0,
-                attn_length=0,
-                base_cell=tf.contrib.rnn.BasicLSTMCell,
-                residual_connections=False,
-                activation=tf.nn.tanh):
+def make_rnn_cell(rnn_layer_sizes,
+                  dropout_keep_prob=1.0,
+                  attn_length=0,
+                  base_cell=tf.contrib.rnn.BasicLSTMCell,
+                  residual_connections=False,
+                  activation=tf.nn.tanh):
     """
     Makes an RNN cell from the given hyperparameters. (From Magenta)
 
@@ -79,7 +79,7 @@ def MakeRNNCell(rnn_layer_sizes,
     return cell
 
 
-def DynamicRNN(_input, hparams, initial_state=None, name="lstm"):
+def dynamic_rnn(_input, hparams, initial_state=None, name="lstm"):
     """
     Builds andand executes Dynamic RNN with specified activation
 
@@ -113,12 +113,12 @@ def DynamicRNN(_input, hparams, initial_state=None, name="lstm"):
 
     # Build RNN Cell
     with tf.variable_scope(name):
-        rnn_cell = MakeRNNCell(hparams['rnn_layer_sizes'],
-                               hparams['dropout_keep_prob'],
-                               hparams['attn_length'],
-                               hparams['base_cell'],
-                               hparams['residual_connections'],
-                               hparams['activation'])
+        rnn_cell = make_rnn_cell(hparams['rnn_layer_sizes'],
+                                 hparams['dropout_keep_prob'],
+                                 hparams['attn_length'],
+                                 hparams['base_cell'],
+                                 hparams['residual_connections'],
+                                 hparams['activation'])
 
     outputs, states = tf.nn.dynamic_rnn(rnn_cell, _input, initial_state=initial_state,
                                         dtype=_input.dtype)
@@ -126,7 +126,7 @@ def DynamicRNN(_input, hparams, initial_state=None, name="lstm"):
     return outputs, states
 
 
-def CNN(_input, hparams, name="cnn"):
+def cnn(_input, hparams, name="cnn"):
     """
     Builds a Convolutional Neural Network with a flattened output
 
@@ -165,6 +165,6 @@ def CNN(_input, hparams, name="cnn"):
     return flat
 
 
-def RCNN(self, _input, hparams, name='rcnn'):
+def rcnn(_input, hparams, name='rcnn'):
     # TODO
     raise NotImplementedError('RCNN not implemented')
