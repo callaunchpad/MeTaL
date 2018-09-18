@@ -19,12 +19,13 @@ def feed_forward(_input, hparams, name="ffn"):
             'output_size': Dimensionality of output
             'hidden_sizes': List of hidden layer sizes
             'activations': List of activation functions for each layer
+        name: Variable scope name
     Returns:
         Output tensor of shape [None, output_size]
     @Authors: Arsh Zahed
     """
 
-    # We iteratively nest the layers
+    # Iteratively nest the layers
     net = _input
     hidden_sizes = hparams['hidden_sizes']
     activations = hparams['activations']
@@ -54,7 +55,6 @@ def make_rnn_cell(rnn_layer_sizes,
             given sub-cell.
         attn_length: The size of the attention vector.
         base_cell: The base tf.contrib.rnn.RNNCell to use for sub-cells.
-
     Returns:
         A tf.contrib.rnn.MultiRNNCell based on the given hyperparameters.
     @Authors: Arsh Zahed
@@ -92,6 +92,7 @@ def dynamic_rnn(_input, hparams, initial_state=None, name="lstm"):
             'base_cell': RNN Cell class from tf.contrib.rnn.*
             'residual_connections': Boolean, True to have residuals
             'activation': Output activation of RNN
+        name: Variable scope name
     Returns:
         Outputs and states Tensors. Output Tensor of shape
             [None, total_time, rnn_layer_sizes[-1]]
@@ -138,6 +139,7 @@ def cnn(_input, hparams, name="cnn"):
             'stride_lengths': List of strides for each layer
             'padding_types': List of padding for each layer
             'activations': List of activation functions for each layer
+        name: Variable scope name
     Returns:
         Flattened output tensor of shape [None, output_size]
     @Authors: Yi Liu
