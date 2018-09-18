@@ -1,13 +1,45 @@
+"""
+Classes for policy gradient neural networks
+
+@Authors: Yi Liu
+"""
 import tensorflow as tf
+from algorithms.architectures import feed_forward
 
 
-class PGFFNN:
+class PGFFNetwork:
     """
-    TODO
-    """
+    Policy gradient feed forward neural network
 
-    def __init__(self):
-        return
+    @Authors: Yi Liu
+    """
+    def __init__(self, sess, state_size, action_size, lr, ff_hparams, name='PGFFNetwork'):
+        self.lr = lr
+        self.sess = sess
+
+        self.s = tf.placeholder(tf.float32, [None, state_size], "state")
+        self.a = tf.placeholder(tf.int32, [None, action_size], "action")
+        self.r = tf.placeholder(tf.float32, [None, ], "discounted_rewards")
+
+        with tf.variable_scope(name):
+            with tf.variable_scope('network'):
+                logits = feed_forward(self.s, ff_hparams)
+                # softmax layer to give probability array
+                self.outputs = tf.nn.softmax(logits)
+
+            with tf.variable_scope('training'):
+                cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=self.a, logits=logits)
+                self.loss = tf.reduce_mean(self.r * cross_entropy)
+                self.train_op = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
+
+    def train(self, sample_s, sample_a, sample_r):
+        # train neural network
+        feed_dict = {self.s: sample_s, self.a: sample_a, self.r: sample_r}
+        error, _ = self.sess.run([self.loss, self.train_op], feed_dict=feed_dict)
+        return error
+
+    def action_dist(self, state):
+        return self.sess.run(self.outputs, feed_dict={self.s: state})
 
 
 class PGLSTM:
@@ -24,7 +56,7 @@ class PGConvNetwork:
     A basic network that performs convolutions and 
     """
 
-    def __init__(self, state_size, action_size, learning_rate, name='PGNetwork'):
+    def __init__(self, state_size, action_size, learning_rate, name='PGConvNetwork'):
         self.state_size = state_size
         self.action_size = action_size
         self.learning_rate = learning_rate
