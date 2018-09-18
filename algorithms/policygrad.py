@@ -9,7 +9,7 @@ from algorithms.architectures import feed_forward
 
 class PGFFNetwork:
     """
-    Policy gradient feed forward neural network
+    Creates a policy gradient feed forward neural network
 
     @Authors: Yi Liu
     """
@@ -24,7 +24,7 @@ class PGFFNetwork:
         with tf.variable_scope(name):
             with tf.variable_scope('network'):
                 logits = feed_forward(self.s, ff_hparams)
-                # softmax layer to give probability array
+                # softmax layer to create probability array
                 self.outputs = tf.nn.softmax(logits)
 
             with tf.variable_scope('training'):
@@ -34,12 +34,27 @@ class PGFFNetwork:
                 self.train_op = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
 
     def train(self, sample_s, sample_a, sample_r):
-        # train neural network
+        """
+        Trains neural network
+        args:
+            sample_s: sample state vectors
+            sample_a: sample actions (integers)
+            sample_r: sample rewards (floats)
+        Returns:
+            Error value for the sample batch
+        """
         feed_dict = {self.s: sample_s, self.a: sample_a, self.r: sample_r}
         error, _ = self.sess.run([self.loss, self.train_op], feed_dict=feed_dict)
         return error
 
     def action_dist(self, state):
+        """
+        Outputs action distribution based on state
+        args:
+            state: current state vector
+        Returns:
+            Vector of action distributions
+        """
         return self.sess.run(self.outputs, feed_dict={self.s: state})
 
 
@@ -54,7 +69,7 @@ class PGLSTM:
 
 class PGConvNetwork:
     """
-    A basic network that performs convolutions and 
+    A basic network that performs convolutions. (Temporary!!)
     """
 
     def __init__(self, state_size, action_size, learning_rate, name='PGConvNetwork'):
