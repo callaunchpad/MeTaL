@@ -13,7 +13,7 @@ from algorithms.policygrad import PGFFNetwork
 n_max_iter = 1500
 # number of games played
 n_games = 1500
-discount_rate = 0.99
+discount_rate = 0.96
 
 env = gym.make('CartPole-v0')
 env._max_episode_steps = n_max_iter
@@ -24,10 +24,13 @@ env_act_n = 2
 
 ff_hparams = {
     'hidden_sizes': [30, 30],
-    'activations': [tf.nn.relu, tf.nn.relu],
-    'output_size': env_act_n
+    'activations': [tf.nn.leaky_relu, tf.nn.leaky_relu],
+    'output_size': env_act_n,
+    'kernel_initializers': [tf.contrib.layers.xavier_initializer(),
+                            tf.contrib.layers.xavier_initializer(),
+                            tf.contrib.layers.xavier_initializer()]
 }
-learning_rate = 0.001
+learning_rate = 0.004
 sess = tf.InteractiveSession()
 agent = PGFFNetwork(sess, env_obs_n, env_act_n, ff_hparams, learning_rate)
 tf.global_variables_initializer().run()
@@ -56,13 +59,8 @@ for game in range(n_games):
         accumulated_reward = rewards[step] + accumulated_reward * discount_rate
         discounted_rewards.insert(0, accumulated_reward)
     # normalize discounted rewards
-    rewards_mean = np.mean(discounted_rewards)
-    rewards_std = np.std(discounted_rewards)
-    discounted_rewards = [(reward - rewards_mean) / rewards_std for reward in discounted_rewards]
-
-    # format actions and rewards to proper dimensions
-    actions = np.expand_dims(actions, axis=1)
-    discounted_rewards = np.expand_dims(discounted_rewards, axis=1)
+    discounted_rewards -= np.mean(discounted_rewards)
+    discounted_rewards /= np.std(discounted_rewards)
 
     # train agent
     error = agent.train(states, actions, discounted_rewards)
