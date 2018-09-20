@@ -18,8 +18,8 @@ class PGFFNetwork:
         self.sess = sess
 
         self.s = tf.placeholder(tf.float32, [None, state_size], "state")
-        self.a = tf.placeholder(tf.int32, [None, 1], "action")
-        self.r = tf.placeholder(tf.float32, [None, 1], "discounted_rewards")
+        self.a = tf.placeholder(tf.int32, [None, ], "action")
+        self.r = tf.placeholder(tf.float32, [None, ], "discounted_rewards")
 
         with tf.variable_scope(name):
             with tf.variable_scope('network'):
@@ -30,6 +30,7 @@ class PGFFNetwork:
             with tf.variable_scope('training'):
                 one_hot = tf.one_hot(self.a, action_size)
                 cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=logits)
+
                 self.loss = tf.reduce_mean(cross_entropy * self.r)
                 self.train_op = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
 
