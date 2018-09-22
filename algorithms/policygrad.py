@@ -15,6 +15,9 @@ class PGFFNetwork:
         self.lr = lr
         self.sess = sess
         self.n_episodes = n_episodes
+        
+        # Expected total rewards from state s. We update this as we train
+        self.expected_rewards = {}
 
         self.s = tf.placeholder(tf.float32, [None, state_size], "state")
         self.a = tf.placeholder(tf.int32, [None, ], "action")
@@ -34,16 +37,39 @@ class PGFFNetwork:
                 self.train_op = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
 
 
-    def train(self, sample_s, sample_a, sample_r):
+    def train(self, sample_s, sample_a, sample_r, use_baseline=False):
         """
         Trains neural network
         args:
-            sample_s: self.n_episodes number of sample state vectors
-            sample_a: self.n_episodes number of sample actions (integers)
-            sample_r: self.n_episodes number of sample rewards (floats)
+            sample_s:       self.n_episodes number of sample state vectors
+            sample_a:       self.n_episodes number of sample actions (integers)
+            sample_r:       self.n_episodes number of sample rewards (floats)
+            use_baseline:   Flag on whether we should subtract a baseline or not for variance reduction
         Returns:
             Error value for the sample batch
         """
+        # Update expected rewards, using exponentional moving average. We use this as the baseline
+        if use_baseline:
+            tmp_expected_rewards = {}
+            num_samples_state = {}  # how many times we encounter each state, used for averaging
+            for states, actions, rewards in zip(sample_s, sample_a, sample_r):  # go through the batch
+                for state, action, reward in zip(states, actions, rewards): # go through the sample
+                    if state not in tmp_expected_rewards:
+                        tmp_expected_rewards[state] = 0
+                    tmp_expected_rewards[state] += reward
+                    num_samples_state[state]++
+
+            for s in tmp_expected_rewards: # get averages
+                tmp_expected_rewards[s] /= num_samples_state[s]
+                if s not in self.expected_rewards:
+                    self.expected_rewards[s] = 0
+                self.expected_rewards[s] = 0.5 * (self.expected_rewards[s] + tmp_expected_rewards[s]) # exp moving average
+        
+            for i in range(states): # go through the batch
+                for j in range(states[i]): # go through the sample
+                    rewards[i][j] -= self.expected_rewards[state[i][j]] # subtract baseline
+
+        
         feed_dict = {self.s: sample_s, self.a: sample_a, self.r: sample_r}
         error, _ = self.sess.run([self.loss, self.train_op], feed_dict=feed_dict)
         return error
