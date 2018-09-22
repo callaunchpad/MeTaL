@@ -28,7 +28,7 @@ class PGFFNetwork:
             with tf.variable_scope('training'):
                 one_hot = tf.one_hot(self.a, action_size)
                 cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=logits)
-
+                
                 self.loss = tf.reduce_mean(cross_entropy * self.r)
                 self.train_op = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
 

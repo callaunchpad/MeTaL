@@ -36,6 +36,7 @@ ff_hparams = {
                             tf.contrib.layers.xavier_initializer(),
                             tf.contrib.layers.xavier_initializer()]
 }
+
 learning_rate = 0.004
 sess = tf.InteractiveSession()
 agent = PGFFNetwork(sess, env_obs_n, env_act_n, ff_hparams, learning_rate)
