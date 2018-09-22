@@ -7,12 +7,18 @@ Tests PGFFNetwork on an environment
 import gym
 import numpy as np
 import tensorflow as tf
+import os
+import sys
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, os.path.dirname(dir_path))
+
 from algorithms.policygrad import PGFFNetwork
 
 # maximum number of iterations of environment
-n_max_iter = 1500
+n_max_iter = 150000
 # number of games played
-n_games = 1500
+n_games = 15000
 discount_rate = 0.99
 
 env = gym.make('CartPole-v0')
@@ -67,3 +73,38 @@ for game in range(n_games):
     # train agent
     error = agent.train(states, actions, discounted_rewards)
     print("Game: {}, Error: {}, Game Length: {}, Total Reward: {}".format(game, error, len(actions), sum(rewards)))
+
+
+    // Build Computational Graph
+    // None dimension indicates variable size
+    // In this case, batch size
+    x = tf.placeholder(dtype=tf.float32, shape=[None, input_size])
+    y_hat = NeuralNet(x)
+    y_truth = tf.placeholder(dtype=tf.float32,
+                             shape=[None, output_size])
+    // Add loss to graph
+    loss = LossFunction(y_hat, y_truth)
+    opt = Optimizer(learning_rate, loss)
+
+    with tf.Session() as sess:
+
+        // Collect data
+        input_, truth = GetData(...)
+
+        // Associate values
+        feed_dict = {x: input_, y_truth: truth}
+        // will run up to optimizer
+        sess.run(opt, feed_dict=feed_dict)
+
+
+// Build Computation Graph
+
+// Initialize Variables
+
+with tf.Session() as sess:
+    for i in range(num_iterations):
+        // Get Batch of Data
+        
+        // Feed Data, Run session, 
+        // Update Parameters
+
