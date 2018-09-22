@@ -9,11 +9,12 @@ from algorithms.architectures import feed_forward
 class PGFFNetwork:
     """
     Creates a policy gradient feed forward neural network
-    @Authors: Yi Liu
+    @Authors: Yi Liu, Jihan Yin, Joey Hejna
     """
-    def __init__(self, sess, state_size, action_size, ff_hparams, lr, name='PGFFNetwork'):
+    def __init__(self, sess, state_size, action_size, ff_hparams, lr, n_episodes, name='PGFFNetwork'):
         self.lr = lr
         self.sess = sess
+        self.n_episodes = n_episodes
 
         self.s = tf.placeholder(tf.float32, [None, state_size], "state")
         self.a = tf.placeholder(tf.int32, [None, ], "action")
@@ -37,9 +38,9 @@ class PGFFNetwork:
         """
         Trains neural network
         args:
-            sample_s: sample state vectors
-            sample_a: sample actions (integers)
-            sample_r: sample rewards (floats)
+            sample_s: self.n_episodes number of sample state vectors
+            sample_a: self.n_episodes number of sample actions (integers)
+            sample_r: self.n_episodes number of sample rewards (floats)
         Returns:
             Error value for the sample batch
         """

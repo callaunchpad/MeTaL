@@ -19,6 +19,8 @@ from algorithms.policygrad import PGFFNetwork
 n_max_iter = 150000
 # number of games played
 n_games = 1500
+# number of episodes to run for each game
+n_episodes = 100
 discount_rate = 0.96
 
 env = gym.make('CartPole-v0')
@@ -39,32 +41,37 @@ ff_hparams = {
 
 learning_rate = 0.004
 sess = tf.InteractiveSession()
-agent = PGFFNetwork(sess, env_obs_n, env_act_n, ff_hparams, learning_rate)
+agent = PGFFNetwork(sess, env_obs_n, env_act_n, ff_hparams, learning_rate, n_episodes)
 tf.global_variables_initializer().run()
 
 for game in range(n_games):
-    obs = env.reset()
     # store states, actions, and rewards
     states = []
     actions = []
     rewards = []
-    for _ in range(n_max_iter):
-        action_dist = agent.action_dist(obs[np.newaxis, :])
-        action = np.random.choice(np.arange(env_act_n), p=np.squeeze(action_dist))
-        obs, reward, done, info = env.step(action)
-
-        states.append(obs)
-        actions.append(action)
-        rewards.append(reward)
-        if done:
-            break
-
-    # discount rewards
     discounted_rewards = []
-    accumulated_reward = 0
-    for step in reversed(range(len(rewards))):
-        accumulated_reward = rewards[step] + accumulated_reward * discount_rate
-        discounted_rewards.insert(0, accumulated_reward)
+    for episode in range(agent.n_episodes):
+        states.append([])
+        actions.append([])
+        rewards.append([])
+        discounted_rewards.append([])
+        obs = env.reset()
+        for _ in range(n_max_iter):
+            action_dist = agent.action_dist(obs[np.newaxis, :])
+            action = np.random.choice(np.arange(env_act_n), p=np.squeeze(action_dist))
+            obs, reward, done, info = env.step(action)
+
+            states[-1].append(obs)
+            actions[-1].append(action)
+            rewards[-1].append(reward)
+            if done:
+                break
+
+        # discount rewards
+        accumulated_reward = 0
+        for step in reversed(range(len(rewards))):
+            accumulated_reward = rewards[step] + accumulated_reward * discount_rate
+            discounted_rewards[-1].insert(0, accumulated_reward)
     # normalize discounted rewards
     discounted_rewards -= np.mean(discounted_rewards)
     discounted_rewards /= np.std(discounted_rewards)
