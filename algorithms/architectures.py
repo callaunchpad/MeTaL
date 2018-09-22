@@ -18,24 +18,30 @@ def feed_forward(_input, hparams, name="ffn"):
         _input: Tensor of shape [None, input_size]
         hparams: Dictionary of hyperparameters
             'output_size': Dimensionality of output
-            'hidden_sizes': List of hidden layer sizes
-            'activations': List of activation functions for each layer
+            'hidden_sizes': List of hidden layer sizes except for output layer
+            'activations': List of activation functions for each layer except for output layer
+            'kernel_initializers': List of kernel initializers for each layer
         name: Variable scope name
     Returns:
         Output tensor of shape [None, output_size]
     @Authors: Arsh Zahed
     """
-
-    # Iteratively nest the layers
     net = _input
     hidden_sizes = hparams['hidden_sizes']
     activations = hparams['activations']
+    kernel_initializers = hparams['kernel_initializers']
+
     with tf.variable_scope(name):
         for i in range(len(activations)):
-            net = tf.layers.dense(net, hidden_sizes[i], activations[i])
+            net = tf.layers.dense(
+                inputs=net,
+                units=hidden_sizes[i],
+                activation=activations[i],
+                kernel_initializer=kernel_initializers[i]
+            )
         # Call our prediction/policy y_hat.
         # Linear activation allows for logits
-        y_hat = tf.layers.dense(net, hparams['output_size'])
+        y_hat = tf.layers.dense(net, hparams['output_size'], kernel_initializer=kernel_initializers[-1])
 
     return y_hat
 

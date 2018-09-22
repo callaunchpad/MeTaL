@@ -18,8 +18,8 @@ from algorithms.policygrad import PGFFNetwork
 # maximum number of iterations of environment
 n_max_iter = 150000
 # number of games played
-n_games = 15000
-discount_rate = 0.99
+n_games = 1500
+discount_rate = 0.96
 
 env = gym.make('CartPole-v0')
 env._max_episode_steps = n_max_iter
@@ -30,10 +30,13 @@ env_act_n = 2
 
 ff_hparams = {
     'hidden_sizes': [30, 30],
-    'activations': [tf.nn.relu, tf.nn.relu],
-    'output_size': env_act_n
+    'activations': [tf.nn.leaky_relu, tf.nn.leaky_relu],
+    'output_size': env_act_n,
+    'kernel_initializers': [tf.contrib.layers.xavier_initializer(),
+                            tf.contrib.layers.xavier_initializer(),
+                            tf.contrib.layers.xavier_initializer()]
 }
-learning_rate = 0.001
+learning_rate = 0.004
 sess = tf.InteractiveSession()
 agent = PGFFNetwork(sess, env_obs_n, env_act_n, ff_hparams, learning_rate)
 tf.global_variables_initializer().run()
@@ -62,49 +65,9 @@ for game in range(n_games):
         accumulated_reward = rewards[step] + accumulated_reward * discount_rate
         discounted_rewards.insert(0, accumulated_reward)
     # normalize discounted rewards
-    rewards_mean = np.mean(discounted_rewards)
-    rewards_std = np.std(discounted_rewards)
-    discounted_rewards = [(reward - rewards_mean) / rewards_std for reward in discounted_rewards]
-
-    # format actions and rewards to proper dimensions
-    actions = np.expand_dims(actions, axis=1)
-    discounted_rewards = np.expand_dims(discounted_rewards, axis=1)
+    discounted_rewards -= np.mean(discounted_rewards)
+    discounted_rewards /= np.std(discounted_rewards)
 
     # train agent
     error = agent.train(states, actions, discounted_rewards)
     print("Game: {}, Error: {}, Game Length: {}, Total Reward: {}".format(game, error, len(actions), sum(rewards)))
-
-
-    // Build Computational Graph
-    // None dimension indicates variable size
-    // In this case, batch size
-    x = tf.placeholder(dtype=tf.float32, shape=[None, input_size])
-    y_hat = NeuralNet(x)
-    y_truth = tf.placeholder(dtype=tf.float32,
-                             shape=[None, output_size])
-    // Add loss to graph
-    loss = LossFunction(y_hat, y_truth)
-    opt = Optimizer(learning_rate, loss)
-
-    with tf.Session() as sess:
-
-        // Collect data
-        input_, truth = GetData(...)
-
-        // Associate values
-        feed_dict = {x: input_, y_truth: truth}
-        // will run up to optimizer
-        sess.run(opt, feed_dict=feed_dict)
-
-
-// Build Computation Graph
-
-// Initialize Variables
-
-with tf.Session() as sess:
-    for i in range(num_iterations):
-        // Get Batch of Data
-        
-        // Feed Data, Run session, 
-        // Update Parameters
-
