@@ -12,21 +12,39 @@ class PGFFNetwork:
     @Authors: Yi Liu
     """
     def __init__(self, sess, state_size, action_size, ff_hparams, lr, name='PGFFNetwork'):
+        """
+        Creates network
+        args:
+            sess: session
+            state_size: number of values in the state vector
+            action_size: number of possible discrete actions
+            ff_hparams: hyper parameters for the network
+            lr: learning rate of network
+            name: variable scope
+        """
+        # learning rate
         self.lr = lr
+        # session
         self.sess = sess
 
+        # list of states for a single game
         self.s = tf.placeholder(tf.float32, [None, state_size], "state")
+        # list of actions (integers) for a single game
         self.a = tf.placeholder(tf.int32, [None, ], "action")
+        # list of discounted rewards (floats) for a single game
         self.r = tf.placeholder(tf.float32, [None, ], "discounted_rewards")
 
         with tf.variable_scope(name):
             with tf.variable_scope('network'):
+                # logits - output of the network without
                 logits = feed_forward(self.s, ff_hparams)
                 # softmax layer to create probability array
                 self.outputs = tf.nn.softmax(logits)
 
             with tf.variable_scope('training'):
+                # onehot encoding of the actions
                 one_hot = tf.one_hot(self.a, action_size)
+                # determine cross entropy
                 cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=logits)
 
                 self.loss = tf.reduce_mean(cross_entropy * self.r)
