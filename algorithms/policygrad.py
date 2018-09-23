@@ -11,17 +11,18 @@ class PGFFNetwork:
     Creates a policy gradient feed forward neural network
     @Authors: Yi Liu, Jihan Yin, Joey Hejna
     """
-    def __init__(self, sess, state_size, action_size, ff_hparams, lr, n_episodes, name='PGFFNetwork'):
+    def __init__(self, sess, state_size, action_size, ff_hparams, lr, n_episodes, bin_size, name='PGFFNetwork'):
         self.lr = lr
         self.sess = sess
         self.n_episodes = n_episodes
         
         # Expected total rewards from state s. We update this as we train
         self.expected_rewards = {}
+        self.bin_size = bin_size
 
-        self.s = tf.placeholder(tf.float32, [None, state_size], "state")
-        self.a = tf.placeholder(tf.int32, [None, ], "action")
-        self.r = tf.placeholder(tf.float32, [None, ], "discounted_rewards")
+        self.s = tf.placeholder(tf.float32, [self.n_episodes, None, state_size], "state")
+        self.a = tf.placeholder(tf.int32, [self.n_episodes, None,], "action")
+        self.r = tf.placeholder(tf.float32, [self.n_episodes, None,], "discounted_rewards")
 
         with tf.variable_scope(name):
             with tf.variable_scope('network'):
@@ -54,10 +55,11 @@ class PGFFNetwork:
             num_samples_state = {}  # how many times we encounter each state, used for averaging
             for states, actions, rewards in zip(sample_s, sample_a, sample_r):  # go through the batch
                 for state, action, reward in zip(states, actions, rewards): # go through the sample
+                    disc_state = self.discretize(state)
                     if state not in tmp_expected_rewards:
-                        tmp_expected_rewards[state] = 0
-                    tmp_expected_rewards[state] += reward
-                    num_samples_state[state]++
+                        tmp_expected_rewards[disc_state] = 0
+                    tmp_expected_rewards[disc_state] += reward
+                    num_samples_state[disc_state]++
 
             for s in tmp_expected_rewards: # get averages
                 tmp_expected_rewards[s] /= num_samples_state[s]
@@ -65,9 +67,9 @@ class PGFFNetwork:
                     self.expected_rewards[s] = 0
                 self.expected_rewards[s] = 0.5 * (self.expected_rewards[s] + tmp_expected_rewards[s]) # exp moving average
         
-            for i in range(states): # go through the batch
-                for j in range(states[i]): # go through the sample
-                    rewards[i][j] -= self.expected_rewards[state[i][j]] # subtract baseline
+            for batch_i in range(states): # go through the batch
+                for step_i in range(states[batch_i]): # go through the sample
+                    rewards[batch_i][step_i] -= self.expected_rewards[self.discretize(state[batch_i][step_i])] # subtract baseline
 
         
         feed_dict = {self.s: sample_s, self.a: sample_a, self.r: sample_r}
@@ -84,6 +86,18 @@ class PGFFNetwork:
             Vector of action distributions
         """
         return self.sess.run(self.outputs, feed_dict={self.s: state})
+
+
+    def discretize(self, state):
+        """
+        Outputs discrete version of continuous state
+        args:
+            state: current state vector in its continuous form
+        Returns:
+            state vector in discrete forms
+        @Authors: Jihan Yin
+        """
+        # use the bin size
 
 
 class PGLSTM:
