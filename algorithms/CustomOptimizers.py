@@ -5,6 +5,7 @@ from tensorflow.python.framework import ops
 from tensorflow.python.training import optimizer
 import tensorflow as tf
 import numpy as np
+from natural_grad_update import conj_grad_wrapper
 
 
 class NaturalGradientOptimizer(optimizer.Optimizer):
@@ -34,15 +35,15 @@ class NaturalGradientOptimizer(optimizer.Optimizer):
     	fisher_matrix = #TODO
 
         #The vector which produces the gradient when multiplied by the fisher matrix. 
-        inverse_gradient = #TODO 
+        inverse_gradient = conj_grad_wrapper(fisher_matrix, grad)
 
 
-        inv_multiplier = tf.sqrt(tf.matmul(inverse_gradient, gradient, transpose_a = True) / (2*lr_t))
+        inv_multiplier = tf.sqrt(tf.matmul(inverse_gradient, grad, transpose_a = True) / (2*lr_t))
 
         var_update = state_ops.assign_sub(var, inverse_gradient/inv_multiplier)
         #Create an op that groups multiple operations.
         #When this op finishes, all ops in input have finished
-        return control_flow_ops.group(*[var_update, m_t])
+        return control_flow_ops.group(*[var_update])
 
      def _apply_sparse(self, grad, var):
         raise NotImplementedError("Sparse gradient updates are not supported.")
