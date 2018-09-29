@@ -11,9 +11,8 @@ class PGFFNetwork:
     Creates a policy gradient feed forward neural network
     @Authors: Yi Liu
     """
-    def __init__(self, sess, state_size, action_size, ff_hparams, lr, name='PGFFNetwork'):
+    def __init__(self, state_size, action_size, ff_hparams, lr, name='PGFFNetwork'):
         self.lr = lr
-        self.sess = sess
 
         self.s = tf.placeholder(tf.float32, [None, state_size], "state")
         self.a = tf.placeholder(tf.int32, [None, ], "action")
@@ -33,7 +32,7 @@ class PGFFNetwork:
                 self.train_op = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
 
 
-    def train(self, sample_s, sample_a, sample_r):
+    def train(self, sample_s, sample_a, sample_r, sess):
         """
         Trains neural network
         args:
@@ -44,11 +43,11 @@ class PGFFNetwork:
             Error value for the sample batch
         """
         feed_dict = {self.s: sample_s, self.a: sample_a, self.r: sample_r}
-        error, _ = self.sess.run([self.loss, self.train_op], feed_dict=feed_dict)
+        error, _ = sess.run([self.loss, self.train_op], feed_dict=feed_dict)
         return error
 
 
-    def action_dist(self, state):
+    def action_dist(self, state, sess):
         """
         Outputs action distribution based on state
         args:
@@ -56,7 +55,7 @@ class PGFFNetwork:
         Returns:
             Vector of action distributions
         """
-        return self.sess.run(self.outputs, feed_dict={self.s: state})
+        return sess.run(self.outputs, feed_dict={self.s: state})
 
 
 class PGLSTM:
