@@ -59,7 +59,7 @@ class PGFFNetwork:
                     if state not in tmp_expected_rewards:
                         tmp_expected_rewards[disc_state] = 0
                     tmp_expected_rewards[disc_state] += reward
-                    num_samples_state[disc_state]++
+                    num_samples_state[disc_state] += 1
 
             for s in tmp_expected_rewards: # get averages
                 tmp_expected_rewards[s] /= num_samples_state[s]

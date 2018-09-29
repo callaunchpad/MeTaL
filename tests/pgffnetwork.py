@@ -18,7 +18,7 @@ from algorithms.policygrad import PGFFNetwork
 # maximum number of iterations of environment
 n_max_iter = 150000
 # number of games played
-n_games = 1500
+n_games = 300
 # number of episodes to run for each game
 n_episodes = 100
 # number of environments to run
@@ -64,16 +64,21 @@ for game in range(n_games):
         action_dist = agent.action_dist(observations[:, np.newaxis, :])
        
         for env_index, env in enumerate(envs):
-            action = np.random.choice(np.arange(env_act_n), p=np.squeeze(action_dist[env_index]))
-            obs, reward, done, info = env.step(action)
-            obs = obs if not done else env.reset()
-            states[env_index].append(obs)
-            actions[env_index].append(action)
-            rewards[env_index].append(reward)
-            dones[env_index] = done
+            if not dones[env_index]:    
+                action = np.random.choice(np.arange(env_act_n), p=np.squeeze(action_dist[env_index]))
+                obs, reward, done, info = env.step(action)
+                obs = obs if not done else env.reset()
+                states[env_index].append(obs)
+                actions[env_index].append(action)
+                rewards[env_index].append(reward)
+                dones[env_index] = done
+            else:
+                states[env_index].append(states[env_index][-1])
+                actions[env_index].append(actions[env_index][-1])
+                rewards[env_index].append(rewards[env_index][-1])
         
         # This probably needs to change?
-        if any(dones):
+        if all(dones):
             break
 
     agregated_rewards = []
@@ -92,5 +97,8 @@ for game in range(n_games):
     # train agent
     error = agent.train(states, actions, agregated_rewards)
     avg_error = np.mean(error)
-    print("Game: {}, Average Error: {}".format(game, avg_error))
+    sum_rewards = np.sum(rewards)
+    print("Game: {}, Average Error: {}, Total Reward: {}".format(game, avg_error, sum_rewards))
     #print("Game: {}, Average Error: {}, Game Length: {}, Total Reward: {}".format(game, avg_error, len(actions), sum(rewards)))
+
+
