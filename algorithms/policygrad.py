@@ -4,6 +4,7 @@ Classes for policy gradient neural networks
 """
 import tensorflow as tf
 from algorithms.architectures import feed_forward
+from CustomOptimizers import NaturalGradientOptimizer
 
 
 class PGFFNetwork:
@@ -23,14 +24,17 @@ class PGFFNetwork:
             with tf.variable_scope('network'):
                 logits = feed_forward(self.s, ff_hparams)
                 # softmax layer to create probability array
-                self.outputs = tf.nn.softmax(logits)
+                self.outputs = tf.nn.softmax(logits, name='outputs')
 
             with tf.variable_scope('training'):
                 one_hot = tf.one_hot(self.a, action_size)
                 cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=logits)
 
                 self.loss = tf.reduce_mean(cross_entropy * self.r)
-                self.train_op = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
+                self.train_op = tf.train.AdamOptimizer(self.outputs, self.lr).minimize(self.loss)
+
+
+
 
 
     def train(self, sample_s, sample_a, sample_r):
