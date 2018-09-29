@@ -58,7 +58,11 @@ class PGFFNetwork:
         """
         return self.sess.run(self.outputs, feed_dict={self.s: state})
 
+    def output_tensor(self):
+      return self.outputs
 
+    def state_tensor(self):
+      return self.s
 class PGLSTM:
     """
     TODO
