@@ -16,7 +16,19 @@ class PGFFNetwork:
             init function, void return
     @Authors: Yi Liu, Jihan Yin, Joey Hejna
     """
+<<<<<<< HEAD
     def __init__(self, sess, state_size, action_size, ff_hparams, lr, n_episodes, bin_size, name='PGFFNetwork'):
+        """
+        Creates network
+        args:
+            sess: session
+            state_size: number of values in the state vector
+            action_size: number of possible discrete actions
+            ff_hparams: hyper parameters for the network
+            lr: learning rate of network
+            name: variable scope
+        """
+        # learning rate
         self.lr = lr
         self.sess = sess
         self.n_episodes = n_episodes
@@ -25,23 +37,29 @@ class PGFFNetwork:
         self.expected_rewards = {}
         self.bin_size = bin_size
 
+        # list of states for a single game
         self.s = tf.placeholder(tf.float32, [self.n_episodes, None, state_size], "state")
+        # list of actions (integers) for a single game
         self.a = tf.placeholder(tf.int32, [self.n_episodes, None,], "action")
+        
+        # list of discounted rewards (floats) for a single game
         self.r = tf.placeholder(tf.float32, [self.n_episodes, None,], "discounted_rewards")
 
         with tf.variable_scope(name):
             with tf.variable_scope('network'):
+                # logits - output of the network without
                 logits = feed_forward(self.s, ff_hparams)
                 # softmax layer to create probability array
                 self.outputs = tf.nn.softmax(logits)
 
             with tf.variable_scope('training'):
+                # onehot encoding of the actions
                 one_hot = tf.one_hot(self.a, action_size)
+                # determine cross entropy
                 cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=logits)
                 
                 self.loss = tf.reduce_mean(cross_entropy * self.r)
                 self.train_op = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
-
 
     def train(self, sample_s, sample_a, sample_r, use_baseline=False):
         """
@@ -64,7 +82,7 @@ class PGFFNetwork:
                     if state not in tmp_expected_rewards:
                         tmp_expected_rewards[disc_state] = 0
                     tmp_expected_rewards[disc_state] += reward
-                    num_samples_state[disc_state]++
+                    num_samples_state[disc_state] += 1
 
             for s in tmp_expected_rewards: # get averages
                 tmp_expected_rewards[s] /= num_samples_state[s]
@@ -78,19 +96,20 @@ class PGFFNetwork:
 
         
         feed_dict = {self.s: sample_s, self.a: sample_a, self.r: sample_r}
-        error, _ = self.sess.run([self.loss, self.train_op], feed_dict=feed_dict)
+        error, _ = sess.run([self.loss, self.train_op], feed_dict=feed_dict)
         return error
 
 
-    def action_dist(self, state):
+    def action_dist(self, state, sess):
         """
         Outputs action distribution based on state
         args:
             state: current state vector
+            sess: tf.Session to run in
         Returns:
             Vector of action distributions
         """
-        return self.sess.run(self.outputs, feed_dict={self.s: state})
+        return sess.run(self.outputs, feed_dict={self.s: state})
 
 
     def discretize(self, state):
