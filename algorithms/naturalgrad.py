@@ -3,9 +3,6 @@ from algorithms.architectures import feed_forward
 import numpy as np
 from algorithms.util import var_shape, flatten_grad, conjugate_gradient
 
-def flatgrad(loss, var_list):
-    grads = tf.gradients(loss, var_list)
-    return tf.concat([tf.reshape(grad, [np.prod([k.value for k in v.get_shape()])]) for (v, grad) in zip(var_list, grads)], 0)
 
 class NGFFNetwork:
     def __init__(self, state_size, action_size, ff_hparams, lr, name='NGFFNetwork'):
@@ -37,7 +34,7 @@ class NGFFNetwork:
 
             surr_loss = -tf.reduce_mean(self.a * tf.exp(curr_logp - prev_logp))
             g = tf.gradients(surr_loss, self.var_list)
-            self.flat_g = flatgrad(g, self.var_list)
+            self.flat_g = flatten_grad(g, self.var_list)
 
             fixed_kl_div = tf.contrib.distributions.kl_divergence(fixed_curr_dist, curr_dist)
             self.kl_div = tf.contrib.distributions.kl_divergence(curr_dist, prev_dist)
