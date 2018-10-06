@@ -18,8 +18,6 @@ sys.path.insert(0, os.path.dirname(dir_path))
 
 from algorithms.policygrad import PGFFNetwork
 
-<<<<<<< HEAD
-
 flags.DEFINE_string('save_dir', '/tmp/train_log', 'Directory to checkpoint to.')
 flags.DEFINE_integer('max_episodes', 150000, 'Maximum number of episodes.')
 flags.DEFINE_integer('num_games', 1500, 'Number of games played')

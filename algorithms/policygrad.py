@@ -16,7 +16,6 @@ class PGFFNetwork:
             init function, void return
     @Authors: Yi Liu, Jihan Yin, Joey Hejna
     """
-<<<<<<< HEAD
     def __init__(self, sess, state_size, action_size, ff_hparams, lr, n_episodes, bin_size, name='PGFFNetwork'):
         """
         Creates network
@@ -79,7 +78,7 @@ class PGFFNetwork:
             for states, actions, rewards in zip(sample_s, sample_a, sample_r):  # go through the batch
                 for state, action, reward in zip(states, actions, rewards): # go through the sample
                     disc_state = self.discretize(state)
-                    if state not in tmp_expected_rewards:
+                    if disc_state not in tmp_expected_rewards:
                         tmp_expected_rewards[disc_state] = 0
                     tmp_expected_rewards[disc_state] += reward
                     num_samples_state[disc_state] += 1
@@ -90,9 +89,9 @@ class PGFFNetwork:
                     self.expected_rewards[s] = 0
                 self.expected_rewards[s] = 0.5 * (self.expected_rewards[s] + tmp_expected_rewards[s]) # exp moving average
         
-            for batch_i in range(states): # go through the batch
-                for step_i in range(states[batch_i]): # go through the sample
-                    rewards[batch_i][step_i] -= self.expected_rewards[self.discretize(state[batch_i][step_i])] # subtract baseline
+            for batch_i in range(sample_s): # go through the batch
+                for step_i in range(sample_s[batch_i]): # go through the sample
+                    sample_r[batch_i][step_i] -= self.expected_rewards[self.discretize(sample_s[batch_i][step_i])] # subtract baseline
 
         
         feed_dict = {self.s: sample_s, self.a: sample_a, self.r: sample_r}
@@ -119,9 +118,15 @@ class PGFFNetwork:
             state: current state vector in its continuous form
         Returns:
             state vector in discrete forms
+        Example:
+            If the bin_size for state i is 0.1, and state i = 2.16, we round it to i = 2.2
         @Authors: Jihan Yin
         """
-        # use the bin size
+        discretized_state = []
+        for b, s in zip(bin_size, state):
+            discretized_state.append(round(s/b)*b)
+        return discretized_state
+
 
 
 class PGLSTM:
