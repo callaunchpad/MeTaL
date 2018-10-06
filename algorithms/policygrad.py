@@ -37,9 +37,11 @@ class PGFFNetwork:
         self.bin_size = bin_size
 
         # list of states for a single game
+        self.state_size = state_size
         self.s = tf.placeholder(tf.float32, [self.n_episodes, None, state_size], "state")
         # list of actions (integers) for a single game
-        self.a = tf.placeholder(tf.int32, [self.n_episodes, None,], "action")
+        self.a = tf.placeholder(tf.int32, [self.n_episodes, None, action_size], "action")
+        self.action_size = action_size
         
         # list of discounted rewards (floats) for a single game
         self.r = tf.placeholder(tf.float32, [self.n_episodes, None,], "discounted_rewards")
@@ -62,14 +64,15 @@ class PGFFNetwork:
 
     def train(self, sample_s, sample_a, sample_r, use_baseline=False):
         """
-        Trains neural network
+        Trains neural network with batch of episodes
         args:
-            sample_s:       self.n_episodes number of sample state vectors
-            sample_a:       self.n_episodes number of sample actions (integers)
-            sample_r:       self.n_episodes number of sample rewards (floats)
+            sample_s:       self.n_episodes sequences of sample state vectors
+            sample_a:       self.n_episodes sequences of sample actions (integers)
+            sample_r:       self.n_episodes sequences of sample rewards (floats)
             use_baseline:   Flag on whether we should subtract a baseline or not for variance reduction
         Returns:
             Error value for the sample batch
+        @Authors: Jihan Yin
         """
         # Update expected rewards, using exponentional moving average. We use this as the baseline
         if use_baseline:
@@ -92,6 +95,13 @@ class PGFFNetwork:
             for batch_i in range(sample_s): # go through the batch
                 for step_i in range(sample_s[batch_i]): # go through the sample
                     sample_r[batch_i][step_i] -= self.expected_rewards[self.discretize(sample_s[batch_i][step_i])] # subtract baseline
+            
+        # Pad all samples to have same length as max. Add zeros for padding.
+        maxlen = max([len(s) for s in sample_s])
+        for i in range(self.n_episodes):
+            sample_s[i] = sample_s[i] + np.zeros([maxlen-len(sample_s[i]),self.state_size]).tolist()
+            sample_a[i] = sample_a[i] + np.zeros([maxlen-len(sample_a[i]),self.action_size]).tolist()
+            sample_r[i] = sample_r[i] + np.zeros(maxlen-len(sample_r[i])).tolist()
 
         
         feed_dict = {self.s: sample_s, self.a: sample_a, self.r: sample_r}
