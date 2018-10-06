@@ -1,7 +1,7 @@
 """
 Tests PGFFNetwork on an environment
 
-@Authors: Yi Liu
+@Authors: Avik Jain, Yi Liu
 """
 
 import numpy as np
