@@ -11,34 +11,50 @@ class NGFFNetwork:
         self.s = tf.placeholder(tf.float32, [None, state_size], "state")
         self.a = tf.placeholder(tf.float32, [None, action_size], "action")
         self.r = tf.placeholder(tf.float32, [None, ], "discounted_rewards")
+        # previous policy's mean
         self.prev_p_mu = tf.placeholder(tf.float32, [None, action_size], "previous_p_mean")
+        # previous policy's log standard deviation
         self.prev_p_logstd = tf.placeholder(tf.float32, [None, action_size], "previous_p_std")
 
         with tf.variable_scope(name):
+            # create network
             with tf.variable_scope('network'):
                 logits = feed_forward(self.s, ff_hparams)
                 self.probs = tf.nn.softmax(logits)
+            # create a single layer of logstd
             sigma_param = tf.get_variable('sigma', (1, action_size), tf.float32, tf.constant_initializer(0.6))
 
+            # current policy's means (logits)
             curr_p_mu = logits
+            # combine layers of logstd into batch size
             curr_p_logstd = tf.tile(sigma_param, tf.stack((tf.shape(curr_p_mu)[0], 1)))
 
+            # create normal distributions for previous policy
             prev_dist = tf.distributions.Normal(self.prev_p_mu, self.prev_p_logstd)
+            # create normal distributions for current policy
             curr_dist = tf.distributions.Normal(curr_p_mu, curr_p_logstd)
             fixed_curr_dist = tf.distributions.Normal(tf.stop_gradient(curr_p_mu), tf.stop_gradient(curr_p_logstd))
 
+            # log probabilities of actions for each policy distribution
             prev_logp = prev_dist.log_prob(self.a)
             curr_logp = curr_dist.log_prob(self.a)
 
+            # get list of trainable variables in the network
             self.var_list = tf.trainable_variables()
 
-            surr_loss = -tf.reduce_mean(self.a * tf.exp(curr_logp - prev_logp))
+            # surrogate loss is the difference between policies multiplied by advantage
+            surr_loss = -tf.reduce_mean(self.r * tf.exp(curr_logp - prev_logp))
+            # create g used in inverse(fisher) * g
             g = tf.gradients(surr_loss, self.var_list)
+            # flatten gradient
             self.flat_g = flatten_grad(g, self.var_list)
 
+            # calculate kl divergence of policy with itself
             fixed_kl_div = tf.contrib.distributions.kl_divergence(fixed_curr_dist, curr_dist)
+            # kl divergence between current and previous policies (only used for logging)
             self.kl_div = tf.contrib.distributions.kl_divergence(curr_dist, prev_dist)
 
+            # first derivative of kl divergence
             grads = tf.gradients(fixed_kl_div, self.var_list)
             # tricky vector multiplication between derivative of kl divergence and gradient
             # flat_tangent is the vector we are multiplying by (the gradient)
@@ -47,6 +63,7 @@ class NGFFNetwork:
             shapes = map(var_shape, self.var_list)
             start = 0
             tangents = []
+            # for loop shapes flat tangent into shapes of network
             for shape in shapes:
                 size = np.prod(shape)
                 # shape the flat tangent back into shape of the gradient
@@ -55,10 +72,21 @@ class NGFFNetwork:
                 start += size
             # multiply gradient of KL div with reshaped tangent
             grad_prod = [tf.reduce_sum(g * t) for (g, t) in zip(grads, tangents)]
+            # second gradient (fisher)
             sec_grad = tf.gradients(grad_prod, self.var_list)
             self.flat_sec_grad = flatten_grad(sec_grad, self.var_list)
 
     def train(self, sess, sample_s, sample_a, sample_r, sample_mu, sample_logstd):
+        """
+            Trains neural network
+            args:
+                sess: tensorflow session
+                sample_s: sample state vectors
+                sample_a: sample actions (integers)
+                sample_r: sample rewards (floats)
+                sample_mu: means of policy distribution
+                sample_logstd: log standard deviation of distribution
+        """
         feed_dict = {self.s: sample_s, self.a: sample_a, self.r: sample_r,
                      self.prev_p_mu: sample_mu, self.prev_p_logstd: sample_logstd}
 
@@ -67,7 +95,9 @@ class NGFFNetwork:
             feed_dict[self.flat_tangent] = p
             return sess.run(self.flat_sec_grad, feed_dict)
 
+        # get g vector
         g = sess.run(self.flat_g, feed_dict)
+        # calculate step size
         stepdir = conjugate_gradient(fisher_vector_product, -g)
         print(stepdir)
 
