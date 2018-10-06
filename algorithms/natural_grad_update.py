@@ -1,5 +1,6 @@
 import numpy as np
 import scipy as scipy
+from scipy.sparse.linalg import cg
 import tensorflow as tf
 
 def conj_grad_func(A, b):
@@ -9,7 +10,7 @@ def conj_grad_func(A, b):
 	"""
 	#make sure that A is n by n and b is n by 1
 	assert(np.shape(A)[0] == np.shape(A)[1] and np.shape(b)[0] == np.shape(A)[0] and np.shape(b)[1] == 1)
-	return np.array([scipy.sparse.linalg.cg(A,b)[0]]).T
+	return np.array([cg(A,b)[0]]).T
 
 def conj_grad_wrapper(A,b):
 	"""

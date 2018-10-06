@@ -37,7 +37,6 @@ class NaturalGradientOptimizer(optimizer.Optimizer):
         #The vector which produces the gradient when multiplied by the fisher matrix. 
         inverse_gradient = conj_grad_wrapper(fisher_matrix, grad)
 
-
         inv_multiplier = tf.stop_gradient(tf.sqrt(tf.matmul(inverse_gradient, grad, transpose_a = True) / (2*lr_t)))
 
         var_update = state_ops.assign_sub(var, inverse_gradient/inv_multiplier)

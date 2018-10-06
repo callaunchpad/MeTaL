@@ -76,6 +76,12 @@ class NGFFNetwork:
             sec_grad = tf.gradients(grad_prod, self.var_list)
             self.flat_sec_grad = flatten_grad(sec_grad, self.var_list)
 
+            self.true_lr = tf.placeholder(tf.float32, shape=())
+            self.true_grad = tf.placeholder(tf.float32, shape=(-1))
+
+            opt = tf.train.GradientDescentOptimizer(self.true_lr)
+            self.train_op = opt.apply_gradients([(true_grad_list, self.var_list)])
+
     def train(self, sess, sample_s, sample_a, sample_r, sample_mu, sample_logstd):
         """
             Trains neural network
@@ -99,6 +105,11 @@ class NGFFNetwork:
         g = sess.run(self.flat_g, feed_dict)
         # calculate step size
         stepdir = conjugate_gradient(fisher_vector_product, -g)
+        step_size = self.lr*2/np.sqrt(np.dot(g, stepdir))
+        
+        feed_dict = {self.true_lr: step_size, self.true_grad: stepdir}
+        sess.run(self.train_op(), feed_dict)
+
         print(stepdir)
 
 

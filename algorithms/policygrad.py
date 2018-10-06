@@ -4,8 +4,7 @@ Classes for policy gradient neural networks
 """
 import tensorflow as tf
 from algorithms.architectures import feed_forward
-from CustomOptimizers import NaturalGradientOptimizer
-
+from natural_grad_update import conj_grad_wrapper
 
 class PGFFNetwork:
     """
@@ -29,9 +28,30 @@ class PGFFNetwork:
             with tf.variable_scope('training'):
                 one_hot = tf.one_hot(self.a, action_size)
                 cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=logits)
-
                 self.loss = tf.reduce_mean(cross_entropy * self.r)
-                self.train_op = tf.train.AdamOptimizer(self.outputs, self.lr).minimize(self.loss)
+                kl = tf.reduce_mean(tf.distributions.kl_divergence(self.outputs, self.outputs))
+
+                var_list = tf.trainable_variables()
+                flat_vars = tf.concat([tf.reshape(var, [-1]) for var in var_list], axis=0)
+                f_matrix = tf.hessian(kl, flat_vars)
+
+                grad = tf.gradient(self.loss, flat_vars)
+                inv_grad = conj_grad_wrapper(f_matrix, grad)
+                inv_multiplier = tf.stop_gradient(tf.sqrt(
+                  tf.matmul(inv_grad, grad, transpose_a = True) / (2*self.lr)))
+                true_grad = inv_grad/inv_multiplier
+                #Convert flat true_grad to list of grads
+                true_grad_list = []
+                begin = tf.convert_to_tensor(0, dtype=tf.int32)
+                for var in var_list:
+                  shape = tf.shape(var)
+                  end = begin + tf.size(var)
+                  place = place + tf.size(var)
+                  true_grad_list.append()
+
+                opt = tf.train.GradientDescentOptimizer(1)
+                self.train_op = opt.apply_gradients([(true_grad_list, )])
+                #self.train_op = tf.train.AdamOptimizer(self.outputs, self.lr).minimize(self.loss)
 
 
 
