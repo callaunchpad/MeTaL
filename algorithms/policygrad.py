@@ -9,6 +9,11 @@ from algorithms.architectures import feed_forward
 class PGFFNetwork:
     """
     Creates a policy gradient feed forward neural network
+    args:
+            n_episodes:   How many episodes do we run each game, aka batch_size
+            bin_size:     Vector of length state_size, detailing bin sizes for each dimension for converting continuous states to discrete.
+    Returns:
+            init function, void return
     @Authors: Yi Liu, Jihan Yin, Joey Hejna
     """
     def __init__(self, sess, state_size, action_size, ff_hparams, lr, n_episodes, bin_size, name='PGFFNetwork'):
