@@ -3,64 +3,125 @@ Classes for policy gradient neural networks
 @Authors: Yi Liu
 """
 import tensorflow as tf
+import numpy as np
 from algorithms.architectures import feed_forward
-from natural_grad_update import conj_grad_wrapper
+from algorithms.natural_grad_update import conj_grad_wrapper
 
 class PGFFNetwork:
     """
     Creates a policy gradient feed forward neural network
-    @Authors: Yi Liu
+    @Authors: Yi Liu, Avik Jain
     """
-    def __init__(self, sess, state_size, action_size, ff_hparams, lr, name='PGFFNetwork'):
+
+    def __init__(self, state_size, action_size, ff_hparams, lr, name='PGFFNetwork'):
+        """
+        Creates network
+        args:
+            sess: session
+            state_size: number of values in the state vector
+            action_size: number of possible discrete actions
+            ff_hparams: hyper parameters for the network
+            lr: learning rate of network
+            name: variable scope
+        """
+        # learning rate
         self.lr = lr
-        self.sess = sess
 
+        # list of states for a single game
         self.s = tf.placeholder(tf.float32, [None, state_size], "state")
+        # list of actions (integers) for a single game
         self.a = tf.placeholder(tf.int32, [None, ], "action")
+        # list of discounted rewards (floats) for a single game
         self.r = tf.placeholder(tf.float32, [None, ], "discounted_rewards")
-
-        with tf.variable_scope(name):
+        self.name = name
+        self.action_size = action_size
+        self.state_size = state_size
+        self.cum_proba_ratio = tf.placeholder(tf.float32, [None, ], "cumulative_proba_ratios")
+        with tf.variable_scope(self.name):
             with tf.variable_scope('network'):
-                logits = feed_forward(self.s, ff_hparams)
+                # logits - output of the network without
+                self.logits = feed_forward(self.s, ff_hparams)
                 # softmax layer to create probability array
-                self.outputs = tf.nn.softmax(logits, name='outputs')
+                self.outputs = tf.nn.softmax(self.logits, name='outputs')
 
             with tf.variable_scope('training'):
+                # onehot encoding of the actions
                 one_hot = tf.one_hot(self.a, action_size)
-                cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=logits)
+
+                # determine cross entropy
+                cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=self.logits)
+
+                self.loss = tf.reduce_mean(cross_entropy * self.r)
+                self.train_op = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
+                self.off_policy_loss = tf.reduce_mean(cross_entropy * self.r * self.cum_proba_ratio)
+                self.off_policy_train_op = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
+
                 self.loss = tf.reduce_mean(cross_entropy * self.r)
                 self.train_op = tf.train.AdamOptimizer(self.outputs, self.lr).minimize(self.loss)
 
 
 
-
-
-    def train(self, sample_s, sample_a, sample_r):
+    def train(self, sample_s, sample_a, sample_r, sess):
         """
         Trains neural network
         args:
             sample_s: sample state vectors
             sample_a: sample actions (integers)
             sample_r: sample rewards (floats)
+            sess: tf.Session to run in
         Returns:
             Error value for the sample batch
         """
         feed_dict = {self.s: sample_s, self.a: sample_a, self.r: sample_r}
-        error, _ = self.sess.run([self.loss, self.train_op], feed_dict=feed_dict)
+        error, _ = sess.run([self.loss, self.train_op], feed_dict=feed_dict)
         return error
 
+    def train_off_policy(self, sample_s, sample_a, sample_r, sess, iterations=2):
+        """
+        Runs multiple iterations of training with a single sampled rollout, using off policy updates.
+        args:
+            sample_s: sample state vectors
+            sample_a: sample actions (integers)
+            sample_r: sample rewards (floats)
+            sess: tf.Session to run in
+            iterations: number of iterations of training to run
+        Returns:
+            List of error values for the sample batch corresponding to each iteration of training
+        @Authors: Avik Jain
+        """
+        errors = []
+        sampled_action_dist = self.action_dist(sample_s, sess)
+        sampled_action_probs = np.array([sampled_action_dist[i][sample_a[i]] for i in range(len(sample_a))])
+        assert 0 not in sampled_action_probs
+        for _ in range(iterations):
+            action_dist = self.action_dist(sample_s, sess)
+            action_probs = np.array([action_dist[i][sample_a[i]] for i in range(len(sample_a))])
+            print('action_probs', action_probs)
+            cum_proba_ratio = action_probs / sampled_action_probs
+            for i in range(1, len(cum_proba_ratio)):
+                cum_proba_ratio[i] *= cum_proba_ratio[i-1]
 
-    def action_dist(self, state):
+            feed_dict = {self.s: sample_s, self.a: sample_a, self.r: sample_r, self.cum_proba_ratio: cum_proba_ratio}
+            error, _ = sess.run([self.off_policy_loss, self.off_policy_train_op], feed_dict=feed_dict)
+            errors.append(error)
+        return errors
+
+    def action_dist(self, state, sess):
         """
         Outputs action distribution based on state
         args:
             state: current state vector
+            sess: tf.Session to run in
         Returns:
             Vector of action distributions
         """
-        return self.sess.run(self.outputs, feed_dict={self.s: state})
+        return sess.run(self.outputs, feed_dict={self.s: state})
 
+    def output_tensor(self):
+      return self.outputs
 
+    def state_tensor(self):
+      return self.s
 class PGLSTM:
     """
     TODO

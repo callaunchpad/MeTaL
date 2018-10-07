@@ -1,7 +1,7 @@
 """
 Tests PGFFNetwork on an environment
 
-@Authors: Yi Liu
+@Authors: Avik Jain, Yi Liu
 """
 
 import numpy as np
@@ -67,6 +67,9 @@ def main(argv):
             for _ in range(n_max_iter):
                 action_dist = agent.action_dist(obs[np.newaxis, :], sess)
                 action = np.random.choice(np.arange(env_act_n), p=np.squeeze(action_dist))
+                if np.squeeze(action_dist)[action] == 0:
+                    print(np.squeeze(action_dist), action)
+                    assert np.squeeze(action_dist)[action] != 0
                 obs, reward, done, info = env.step(action)
 
                 states.append(obs)
@@ -86,8 +89,8 @@ def main(argv):
             discounted_rewards /= np.std(discounted_rewards)
 
             # train agent
-            error = agent.train(states, actions, discounted_rewards, sess)
-            print("Game: {}, Error: {}, Game Length: {}, Total Reward: {}".format(game, error, len(actions), sum(rewards)))
+            errors = agent.train_off_policy(states, actions, discounted_rewards, sess, iterations=5)
+            print("Game: {}, Error: {}, Game Length: {}, Total Reward: {}".format(game, errors, len(actions), sum(rewards)))
 
 
 if __name__ == "__main__":
