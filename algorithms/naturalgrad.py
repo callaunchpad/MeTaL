@@ -76,11 +76,25 @@ class NGFFNetwork:
             sec_grad = tf.gradients(grad_prod, self.var_list)
             self.flat_sec_grad = flatten_grad(sec_grad, self.var_list)
 
-            self.true_lr = tf.placeholder(tf.float32, shape=())
-            self.true_grad = tf.placeholder(tf.float32, shape=(-1))
+            # parameter manipulation
+            self.p_params = tf.concat([tf.reshape(v, [np.prod(var_shape(v))]) for v in self.var_list], 0)
+            # assignment operator
+            shapes = list(map(var_shape, self.var_list))  # note, here is the needed change.
+            total_size = sum(np.prod(shape) for shape in shapes)
+            self.new_params = tf.placeholder(tf.float32, [total_size])
+            start = 0
+            assigns = []
+            for (shape, v) in zip(shapes, self.var_list):
+                size = np.prod(shape)
+                assigns.append(tf.assign(v, tf.reshape(self.new_params[start:start + size], shape)))
+                start += size
+            self.assign_ops = tf.group(*assigns)
 
-            opt = tf.train.GradientDescentOptimizer(self.true_lr)
-            self.train_op = opt.apply_gradients([(true_grad_list, self.var_list)])
+            # self.true_lr = tf.placeholder(tf.float32, shape=())
+            # self.true_grad = tf.placeholder(tf.float32, shape=(-1))
+            #
+            # opt = tf.train.GradientDescentOptimizer(self.true_lr)
+            # self.train_op = opt.apply_gradients([(true_grad_list, var_list)])
 
     def train(self, sess, sample_s, sample_a, sample_r, sample_mu, sample_logstd):
         """
@@ -106,39 +120,12 @@ class NGFFNetwork:
         # calculate step size
         stepdir = conjugate_gradient(fisher_vector_product, -g)
         step_size = np.sqrt(self.lr*2/np.dot(g, stepdir))
-        
-        feed_dict = {self.true_lr: step_size, self.true_grad: stepdir}
-        sess.run(self.train_op(), feed_dict)
 
-        print(stepdir)
+        # assign new parameters
+        params = sess.run(self.p_params, feed_dict)
+        new_params = params + step_size * stepdir
+        sess.run(self.assign_ops, feed_dict={self.new_params: new_params})
 
-
-    # def train(self, sample_s, sample_a, sample_r):
-
-    # def train(self, sample_s, sample_a, sample_r):
-    #     """
-    #     Trains neural network
-    #     args:
-    #         sample_s: sample state vectors
-    #         sample_a: sample actions (integers)
-    #         sample_r: sample rewards (floats)
-    #     Returns:
-    #         Error value for the sample batch
-    #     """
-    #     feed_dict = {self.s: sample_s, self.a: sample_a, self.r: sample_r}
-    #     error, _ = self.sess.run([self.loss, self.train_op], feed_dict=feed_dict)
-    #     return error
-    #
-    #
-    # def action_dist(self, state):
-    #     """
-    #     Outputs action distribution based on state
-    #     args:
-    #         state: current state vector
-    #     Returns:
-    #         Vector of action distributions
-    #     """
-    #     return self.sess.run(self.outputs, feed_dict={self.s: state})
 
 if __name__ == "__main__":
     ff_hparams = {
