@@ -1,7 +1,7 @@
 import tensorflow as tf
-from algorithms.architectures import feed_forward
+from architectures import feed_forward
 import numpy as np
-from algorithms.util import var_shape, flatten_grad, conjugate_gradient
+from util import var_shape, flatten_grad, conjugate_gradient
 
 
 class NGFFNetwork:
@@ -140,7 +140,7 @@ if __name__ == "__main__":
     sam_a = [[0.3, 0.2], [0.1, 0.6]]
     sam_r = [0.6, 0.3]
     sam_mu = [[0.3, 0.2], [0.2, 0.5]]
-    sam_logstd = [[0.04, 0.02], [0.03, 0.01]]
+    sam_logstd = [[0.4, 0.2], [0.3, 0.1]]
 
     with tf.Session() as sess:
         tf.global_variables_initializer().run()
