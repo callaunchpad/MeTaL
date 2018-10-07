@@ -118,8 +118,8 @@ class NGFFNetwork:
         # get g vector
         g = sess.run(self.flat_g, feed_dict)
         # calculate step size
-        stepdir = conjugate_gradient(fisher_vector_product, -g)
-        step_size = np.sqrt(self.lr*2/np.dot(g, stepdir))
+        stepdir = conjugate_gradient(fisher_vector_product, g)
+        step_size = np.sqrt(2 * self.lr / stepdir.dot(g))
 
         # assign new parameters
         params = sess.run(self.p_params, feed_dict)
