@@ -118,8 +118,8 @@ class NGFFNetwork:
         # get g vector
         g = sess.run(self.flat_g, feed_dict)
         # calculate step size
-        stepdir = conjugate_gradient(fisher_vector_product, -g)
-        step_size = np.sqrt(self.lr*2/np.dot(g, stepdir))
+        stepdir = conjugate_gradient(fisher_vector_product, g)
+        step_size = np.sqrt(2 * self.lr / stepdir.dot(g))
 
         # assign new parameters
         params = sess.run(self.p_params, feed_dict)
@@ -140,7 +140,7 @@ if __name__ == "__main__":
     sam_a = [[0.3, 0.2], [0.1, 0.6]]
     sam_r = [0.6, 0.3]
     sam_mu = [[0.3, 0.2], [0.2, 0.5]]
-    sam_logstd = [[0.04, 0.02], [0.03, 0.01]]
+    sam_logstd = [[0.4, 0.2], [0.3, 0.1]]
 
     with tf.Session() as sess:
         tf.global_variables_initializer().run()
