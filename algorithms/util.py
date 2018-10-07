@@ -20,6 +20,11 @@ def discreteKLDivergence(dist1, dist2):
 
 
 def var_shape(x):
+    """
+    Outputs vector of shapes of x
+
+    @Authors: Yi Liu
+    """
     out = [k.value for k in x.get_shape()]
     assert all(isinstance(a, int) for a in out), \
         "shape function assumes that shape is fully known"
@@ -27,10 +32,26 @@ def var_shape(x):
 
 
 def flatten_grad(grads, var_list):
+    """
+    Flatten grads
+    args:
+        grads: gradients to be flattened
+        var_list: list of trainable variables for grads
+
+    @Authors: Yi Liu
+    """
     return tf.concat([tf.reshape(grad, [np.prod(var_shape(v))]) for (v, grad) in zip(var_list, grads)], 0)
 
 
 def conjugate_gradient(f_Ax, b, cg_iters=10, residual_tol=1e-10):
+    """
+    Calculates conjugate gradient
+    args:
+        f_Ax: function that multiplies A by the parameter of A
+        b: b vector
+
+    @Authors: Yi Liu
+    """
     # in numpy
     p = b.copy()
     r = b.copy()

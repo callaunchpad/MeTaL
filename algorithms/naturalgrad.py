@@ -1,3 +1,9 @@
+"""
+Creates natural gradient network class
+
+@Authors: Yi Liu, Andrew Dickson
+"""
+
 import tensorflow as tf
 from algorithms.architectures import feed_forward
 import numpy as np
