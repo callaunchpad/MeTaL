@@ -44,6 +44,8 @@ class NGFFNetwork:
             # log probabilities of actions for each policy distribution
             prev_logp = prev_dist.log_prob(self.a)
             curr_logp = curr_dist.log_prob(self.a)
+            print("prev_logp", prev_logp)
+            print("curr_logp", curr_logp)
 
             # get list of trainable variables in the network
             self.var_list = tf.trainable_variables()
