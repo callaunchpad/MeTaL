@@ -102,7 +102,18 @@ class NGFFNetwork:
             # opt = tf.train.GradientDescentOptimizer(self.true_lr)
             # self.train_op = opt.apply_gradients([(true_grad_list, var_list)])
 
-    def train(self, sess, sample_s, sample_a, sample_r, sample_mu, sample_logstd):
+    def action_dist(self, state, sess):
+        """
+        Outputs action distribution based on state
+        args:
+            state: current state vector
+            sess: tf.Session to run in
+        Returns:
+            Vector of action distributions
+        """
+        return sess.run(self.probs, feed_dict={self.s: state})
+
+    def train(self, sample_s, sample_a, sample_r, sample_mu, sample_logstd, sess):
         """
             Trains neural network
             args:
@@ -113,6 +124,7 @@ class NGFFNetwork:
                 sample_mu: means of policy distribution
                 sample_logstd: log standard deviation of distribution
         """
+        print("session in function:", sess)
         feed_dict = {self.s: sample_s, self.a: sample_a, self.r: sample_r,
                      self.prev_p_mu: sample_mu, self.prev_p_logstd: sample_logstd}
 
@@ -150,4 +162,4 @@ if __name__ == "__main__":
 
     with tf.Session() as sess:
         tf.global_variables_initializer().run()
-        agent.train(sess, sam_s, sam_a, sam_r, sam_mu, sam_logstd)
+        agent.train(sam_s, sam_a, sam_r, sam_mu, sam_logstd, sess)
