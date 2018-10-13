@@ -124,7 +124,6 @@ class NGFFNetwork:
                 sample_mu: means of policy distribution
                 sample_logstd: log standard deviation of distribution
         """
-        print("session in function:", sess)
         feed_dict = {self.s: sample_s, self.a: sample_a, self.r: sample_r,
                      self.prev_p_mu: sample_mu, self.prev_p_logstd: sample_logstd}
 
