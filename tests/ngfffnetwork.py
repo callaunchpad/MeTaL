@@ -57,6 +57,11 @@ def main(argv):
 
     agent = NGFFNetwork(env_obs_n, env_act_n, ff_hparams, learning_rate)
 
+    # diagnostics saver
+    root_logdir = "tf_logs/"
+    logdir = "{}/run-{}/".format(root_logdir, save_index + 1)
+    file_writer = tf.summary.FileWriter(logdir, tf.get_default_graph())
+
     with tf.Session() as sess:
         tf.global_variables_initializer().run()
 
@@ -97,10 +102,19 @@ def main(argv):
 
             # train agent
             error = agent.train(states, actions, discounted_rewards,  sess)
-            print("Game: {}, Error: {}, Game Length: {}, Total Reward: {}".format(game, error, len(actions), sum(rewards)))
+            print("Game: {}, Error: {}, Game Length: {}, Total Reward: {}".format(
+                game, error, len(actions), sum(rewards)))
+
+            summary = tf.Summary()
+            summary.value.add(tag='Error', simple_value=error)
+            summary.value.add(tag='Game Length', simple_value=len(actions))
+            summary.value.add(tag='Rewards', simple_value=sum(rewards))
+            file_writer.add_summary(summary, game)
 
         saver.save(sess, "./ngff-run-" + str(save_index + 1) + ".ckpt")
 
+    file_writer.flush()
+    file_writer.close()
     env.close()
 
 
