@@ -134,6 +134,7 @@ class NGFFNetwork:
         params = sess.run(self.p_params, feed_dict)
         new_params = params + step_size * stepdir
         sess.run(self.assign_ops, feed_dict={self.new_params: new_params})
+        return np.sum(step_size)
 
 
 if __name__ == "__main__":
