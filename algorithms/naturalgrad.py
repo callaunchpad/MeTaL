@@ -5,9 +5,9 @@ Creates natural gradient network class
 """
 
 import tensorflow as tf
-from architectures import feed_forward
+from algorithms.architectures import feed_forward
 import numpy as np
-from util import var_shape, flatten_grad, conjugate_gradient
+from algorithms.util import var_shape, flatten_grad, conjugate_gradient
 
 
 class NGFFNetwork:
@@ -154,4 +154,4 @@ if __name__ == "__main__":
 
     with tf.Session() as sess:
         tf.global_variables_initializer().run()
-        agent.train(sam_s, sam_a, sam_r, sam_mu, sam_logstd, sess)
+        agent.train(sam_s, sam_a, sam_r, sess)
