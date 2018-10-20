@@ -64,10 +64,10 @@ def main(argv):
             states = []
             actions = []
             rewards = []
-            action_dists = []
+            #action_dists = []
             for _ in range(n_max_iter):
                 action_dist = agent.action_dist(obs[np.newaxis, :], sess)
-                action_dists.append(action_dist)
+            #    action_dists.append(action_dist)
                 action = np.random.choice(np.arange(env_act_n), p=np.squeeze(action_dist))
                 obs, reward, done, info = env.step(action)
 
@@ -78,16 +78,16 @@ def main(argv):
                     break
             #Convert actions to one hot vectors
             
-            one_hot_actions = []
-            one_hot_matrix = np.eye(env_act_n)
-            for action in actions:
-                one_hot_actions.append(one_hot_matrix[action])
-            actions = one_hot_actions
+            #one_hot_actions = []
+            #one_hot_matrix = np.eye(env_act_n)
+            #for action in actions:
+            #    one_hot_actions.append(one_hot_matrix[action])
+            #actions = one_hot_actions
             
 
             #Convert list of action distributions to numpy array
-            action_dists = np.concatenate(action_dists, axis=0)
-            std_devs = np.zeros(action_dists.shape)+0.6
+            #action_dists = np.concatenate(action_dists, axis=0)
+            #std_devs = np.zeros(action_dists.shape)+0.6
 
 
             # discount rewards
@@ -99,8 +99,9 @@ def main(argv):
             # normalize discounted rewards
             discounted_rewards -= np.mean(discounted_rewards)
             discounted_rewards /= np.std(discounted_rewards)
+            print(actions)
             # train agent
-            error = agent.train(states, actions, discounted_rewards, action_dists, std_devs, sess)
+            error = agent.train(states, actions, discounted_rewards, sess)
             print("Game: {}, Error: {}, Game Length: {}, Total Reward: {}".format(game, error, len(actions), sum(rewards)))
 
 
