@@ -1,7 +1,7 @@
 """
-Tests PGFFNetwork on an environment
+Trains PGFFNetwork using meta-learning and then tests it on a normal environment
 
-@Authors: Yi Liu
+@Authors: Andrew Dickson
 """
 
 import numpy as np
@@ -9,9 +9,12 @@ import tensorflow as tf
 import gym
 import os
 import sys
+import random
 
 from tensorflow import flags
 from tensorflow import app
+
+from reptile import Reptile
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.dirname(dir_path))
@@ -35,18 +38,25 @@ def main(argv):
     discount_rate = FLAGS.discount
     learning_rate = FLAGS.learning_rate
 
+    #Create a set of tasks for meta-learning
+    tasks = []
+    for i in range(20):
+        task = gym.make('CartPole-v0')
+        task._max_episode_steps = n_max_iter
+        task.unwrapped.gravity += random.random()*2-1
+        task.unwrapped.length += 0.2*random.random()-0.1
+        tasks.append(task)
+
     # Setup Gym Environment
     env = gym.make('CartPole-v0')
     env._max_episode_steps = n_max_iter
-    env.unwrapped.gravity = 0.1
-    env.unwrapped.length = 3.5
-    print(env.unwrapped.gravity)
 
     # environment observation size
     env_obs_n = 4
     # environment action size
     env_act_n = 2
 
+    #Create agent
     ff_hparams = {
         'hidden_sizes': [30, 30],
         'activations': [tf.nn.leaky_relu, tf.nn.leaky_relu],
@@ -58,9 +68,15 @@ def main(argv):
 
     agent = PGFFNetwork(env_obs_n, env_act_n, ff_hparams, learning_rate)
 
+
     with tf.Session() as sess:
         tf.global_variables_initializer().run()
 
+        #Do meta learning
+        reptile = Reptile(sess, agent, tasks)
+        reptile.train()
+
+        #Test meta learning on original game
         for game in range(n_games):
             obs = env.reset()
             # store states, actions, and rewards
@@ -68,7 +84,6 @@ def main(argv):
             actions = []
             rewards = []
             for _ in range(n_max_iter):
-                env.render()
                 action_dist = agent.action_dist(obs[np.newaxis, :], sess)
                 action = np.random.choice(np.arange(env_act_n), p=np.squeeze(action_dist))
                 obs, reward, done, info = env.step(action)
