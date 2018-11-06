@@ -3,3 +3,5 @@ __pycache__/
 images_background/
 images_evaluation/
 log/
+*.pyc
+.ipynb_checkpoints/
