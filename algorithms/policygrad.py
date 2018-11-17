@@ -44,11 +44,10 @@ class PGFFNetwork:
                 # onehot encoding of the actions
                 one_hot = tf.one_hot(self.a, action_size)
                 # determine cross entropy
-                cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=logits)
+                self.cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=one_hot, logits=logits)
 
-                self.loss = tf.reduce_mean(cross_entropy * self.r)
+                self.loss = tf.reduce_mean(self.cross_entropy * self.r)
                 self.train_op = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
-
 
     def train(self, sample_s, sample_a, sample_r, sess):
         """
