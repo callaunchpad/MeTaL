@@ -51,9 +51,7 @@ def main(argv):
         'hidden_sizes': [30, 30],
         'activations': [tf.nn.leaky_relu, tf.nn.leaky_relu],
         'output_size': env_act_n,
-        'kernel_initializers': [tf.contrib.layers.xavier_initializer(),
-                                tf.contrib.layers.xavier_initializer(),
-                                tf.contrib.layers.xavier_initializer()]
+        'kernel_initializers': [tf.contrib.layers.xavier_initializer()] * 3
     }
 
     agent = PGFFNetwork(env_obs_n, env_act_n, ff_hparams, learning_rate)
@@ -71,11 +69,12 @@ def main(argv):
                 env.render()
                 action_dist = agent.action_dist(obs[np.newaxis, :], sess)
                 action = np.random.choice(np.arange(env_act_n), p=np.squeeze(action_dist))
-                obs, reward, done, info = env.step(action)
+                new_obs, reward, done, info = env.step(action)
 
                 states.append(obs)
                 actions.append(action)
                 rewards.append(reward)
+                obs = new_obs
                 if done:
                     break
 
