@@ -86,11 +86,12 @@ def main(argv):
             for _ in range(n_max_iter):
                 action_dist = agent.action_dist(obs[np.newaxis, :], sess)
                 action = np.random.choice(np.arange(env_act_n), p=np.squeeze(action_dist))
-                obs, reward, done, info = env.step(action)
+                new_obs, reward, done, info = env.step(action)
 
                 states.append(obs)
                 actions.append(action)
                 rewards.append(reward)
+                obs = new_obs
                 if done:
                     break
 

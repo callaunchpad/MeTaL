@@ -69,11 +69,12 @@ class Reptile:
 
 				action_dist = self.sess.run(model.outputs, feed_dict={model.s: obs[np.newaxis, :]})
 				action = np.random.choice(np.arange(env_act_n), p=np.squeeze(action_dist))
-				obs, reward, done, info = task.step(action)
+				new_obs, reward, done, info = task.step(action)
 
 				states.append(obs)
 				actions.append(action)
 				rewards.append(reward)
+				obs = new_obs
 				if done:
 					break
 
