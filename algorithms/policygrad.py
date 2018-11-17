@@ -49,7 +49,6 @@ class PGFFNetwork:
                 self.loss = tf.reduce_mean(self.cross_entropy * self.r)
                 self.train_op = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
 
-
     def train(self, sample_s, sample_a, sample_r, sess):
         """
         Trains neural network
