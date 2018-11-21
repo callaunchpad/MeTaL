@@ -1,6 +1,29 @@
 import gym
 import numpy as np
 import tensorflow as tf
+import os
+
+
+class OrnsteinUhlenbeckActionNoise:
+    def __init__(self, mu, sigma=0.3, theta=.15, dt=1e-2, x0=None):
+        self.theta = theta
+        self.mu = mu
+        self.sigma = sigma
+        self.dt = dt
+        self.x0 = x0
+        self.reset()
+
+    def __call__(self):
+        x = self.x_prev + self.theta * (self.mu - self.x_prev) * self.dt + \
+                self.sigma * np.sqrt(self.dt) * np.random.normal(size=self.mu.shape)
+        self.x_prev = x
+        return x
+
+    def reset(self):
+        self.x_prev = self.x0 if self.x0 is not None else np.zeros_like(self.mu)
+
+    def __repr__(self):
+        return 'OrnsteinUhlenbeckActionNoise(mu={}, sigma={})'.format(self.mu, self.sigma)
 
 
 class ReplayMemory:
@@ -39,12 +62,13 @@ class ActorNetwork:
         self.lr = lr
         self.tau = tau
 
-        self.n_hidden1 = 256
-        self.n_hidden2 = 256
+        self.n_hidden1 = 400
+        self.n_hidden2 = 300
 
         self.inputs, self.outputs, self.scaled, self.params = self._create_network("actor")
         self.t_inputs, self.t_outputs, self.t_scaled, self.t_params = self._create_network("target_actor")
 
+        self.target_init = [self.t_params[i].assign(self.params[i]) for i in range(len(self.t_params))]
         self.update_target_params = \
             [self.t_params[i].assign(self.params[i] * self.tau +
                                      self.t_params[i] * (1. - self.tau)) for i in range(len(self.t_params))]
@@ -59,8 +83,8 @@ class ActorNetwork:
             inputs = tf.placeholder(tf.float32, [None, self.state_size])
             hidden1_layer = tf.layers.dense(inputs, self.n_hidden1, activation=tf.nn.relu)
             hidden2_layer = tf.layers.dense(hidden1_layer, self.n_hidden2, activation=tf.nn.relu)
-            outputs = tf.layers.dense(hidden2_layer, self.action_size, activation=tf.nn.tanh)
-
+            outputs = tf.layers.dense(hidden2_layer, self.action_size, activation=tf.nn.tanh,
+                                      kernel_initializer=tf.initializers.random_uniform(minval=-0.003, maxval=0.003))
             scaled_outputs = self.action_bound * outputs
         params = tf.trainable_variables(scope)
         return inputs, outputs, scaled_outputs, params
@@ -81,6 +105,9 @@ class ActorNetwork:
             self.critic_gradients: critic_gradients
         })
 
+    def init_target(self, sess):
+        sess.run(self.target_init)
+
     def update_target(self, sess):
         sess.run(self.update_target_params)
 
@@ -93,12 +120,13 @@ class CriticNetwork:
         self.lr = lr
         self.tau = tau
 
-        self.n_hidden1 = 256
-        self.n_hidden2 = 256
+        self.n_hidden1 = 400
+        self.n_hidden2 = 300
 
         self.inputs, self.actions, self.outputs, self.params = self._create_network("critic")
         self.t_inputs, self.t_actions, self.t_outputs, self.t_params = self._create_network("target_critic")
 
+        self.target_init = [self.t_params[i].assign(self.params[i]) for i in range(len(self.t_params))]
         self.update_target_params = \
             [self.t_params[i].assign(self.params[i] * self.tau +
                                      self.t_params[i] * (1. - self.tau)) for i in range(len(self.t_params))]
@@ -114,9 +142,16 @@ class CriticNetwork:
             inputs = tf.placeholder(tf.float32, [None, self.state_size])
             actions = tf.placeholder(tf.float32, [None, self.action_size])
             hidden1_layer = tf.layers.dense(inputs, self.n_hidden1, activation=tf.nn.relu)
+
+            # t_s = tf.layers.dense(hidden1_layer, self.n_hidden2)
+            # t_a = tf.layers.dense(actions, self.n_hidden2)
+            # hidden2_layer = t_s + t_a
+            # hidden2_layer = tf.nn.relu(hidden2_layer)
             hidden2_layer = tf.layers.dense(tf.concat([hidden1_layer, actions], 1),
                                             self.n_hidden2, activation=tf.nn.relu)
-            outputs = tf.layers.dense(hidden2_layer, 1)
+
+            outputs = tf.layers.dense(hidden2_layer, 1,
+                                      kernel_initializer=tf.initializers.random_uniform(minval=-0.003, maxval=0.003))
         params = tf.trainable_variables(scope)
         return inputs, actions, outputs, params
 
@@ -145,27 +180,44 @@ class CriticNetwork:
             self.q_pred: q_pred
         })
 
+    def init_target(self, sess):
+        sess.run(self.target_init)
+
     def update_target(self, sess):
         sess.run(self.update_target_params)
 
 
-env = gym.make('Reacher-v2')
+env = gym.make('Swimmer-v2')
 state_dim = env.observation_space.shape[0]
 action_dim = env.action_space.shape[0]
-action_bound = env.action_space.high
+action_bound = env.action_space.high[0]
 
-n_episodes = 400
+print(state_dim, action_dim, action_bound, env.action_space.low)
+
+n_per_render = 2000
+n_per_train = 1
+n_episodes = 2000
 batch_size = 64
 gamma = 0.99
+save_index = 0
 
 memory = ReplayMemory(50000, batch_size)
-actor = ActorNetwork(state_dim, action_dim, action_bound, batch_size, 0.0001, 0.001)
-critic = CriticNetwork(state_dim, action_dim, batch_size, 0.001, 0.001)
+actor = ActorNetwork(state_dim, action_dim, action_bound, batch_size, 0.00005, 0.001)
+critic = CriticNetwork(state_dim, action_dim, batch_size, 0.0005, 0.001)
+actor_noise = OrnsteinUhlenbeckActionNoise(mu=np.zeros(action_dim))
 
 with tf.Session() as session:
     tf.global_variables_initializer().run()
-    actor.update_target(session)
-    critic.update_target(session)
+    saver = tf.train.Saver()
+
+    checkpoint = "./run-" + str(save_index) + ".ckpt"
+    if os.path.isfile(checkpoint + ".meta"):
+        saver.restore(session, checkpoint)
+    elif save_index != 0:
+        raise Exception("Session data not found!!")
+
+    actor.init_target(session)
+    critic.init_target(session)
 
     for episode in range(n_episodes):
         obs = env.reset()
@@ -173,7 +225,15 @@ with tf.Session() as session:
         episode_length = 0
 
         while True:
-            action = actor.get_action(session, obs[np.newaxis, :])[0]
+            # if episode % n_per_render == 0:
+            #     env.render()
+
+            if episode > 20:
+                action = actor.get_action(session, obs[np.newaxis, :])[0] + actor_noise()
+                # print(action)
+            else:
+                action = env.action_space.sample()
+
             new_obs, reward, done, info = env.step(action)
             total_reward += reward
             episode_length += 1
@@ -182,7 +242,7 @@ with tf.Session() as session:
             # print(reward)
             obs = new_obs
 
-            if memory.get_length() > batch_size:
+            if episode_length % n_per_train == 0 and episode > 20:
                 mem_s, mem_a, mem_r, mem_s_, mem_done = memory.sample()
                 target_actions = actor.get_target_action(session, mem_s_)
                 target_q = critic.get_target_value(session, mem_s_, target_actions)
@@ -194,7 +254,9 @@ with tf.Session() as session:
                     else:
                         q_y.append(target_q[i] * gamma + mem_r[i])
                 critic.train(session, mem_s, mem_a, q_y)
-                critic_grads = critic.get_action_grads(session, mem_s, mem_a)[0]
+
+                actor_pred = actor.get_action(session, mem_s)
+                critic_grads = critic.get_action_grads(session, mem_s, actor_pred)[0]
 
                 actor.train(session, mem_s, critic_grads)
                 actor.update_target(session)
@@ -204,6 +266,7 @@ with tf.Session() as session:
                 print(episode, episode_length, total_reward, total_reward / episode_length)
                 break
 
+    saver.save(session, "./run-" + str(save_index + 1) + ".ckpt")
     while True:
         obs = env.reset()
         while True:
