@@ -1,8 +1,8 @@
-import gym
+import environments.mujoco.env as env
 import time
 import numpy as np
 
-env = gym.make('Ant-v2')
+env = env.make('move_task')
 obs = env.reset()
 while True:
     env.render()
