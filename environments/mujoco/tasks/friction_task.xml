@@ -14,8 +14,8 @@
 		<geom conaffinity="0" fromto="-.3 -.3 .01 -.3 .3 .01" name="sideW" rgba="0 0.5 1 1" size=".02" type="capsule"/>
 		<!-- Agent -->
 		<body name="agent" pos=".1 -.1 .01">
-			<joint armature="1000" axis="1 0 0" limited="true" name="agent_x" pos="0 0 0" range="-.27 .27" ref=".1" type="slide"/>
-			<joint armature="1000" axis="0 1 0" limited="true" name="agent_y" pos="0 0 0" range="-.27 .27" ref="-.1" type="slide"/>
+			<joint armature="1000" damping="800" axis="1 0 0" limited="true" name="agent_x" pos="0 0 0" range="-.27 .27" ref=".1" type="slide"/>
+			<joint armature="1000" damping="800" axis="0 1 0" limited="true" name="agent_y" pos="0 0 0" range="-.27 .27" ref="-.1" type="slide"/>
 			<geom conaffinity="0" contype="0" name="agent_body" pos="0 0 0" rgba="0 0.75 1 1" size="0.02 0.02 .0001" type="box"/>
 			<joint axis="0 0 1" limited="false" name="viewer" pos="0 0 0" type="hinge"/>
 			<body name="agent_eye" pos="0 0 0">

@@ -1,13 +1,8 @@
 import environments.mujoco.env as env
-import time
-import numpy as np
 
-env = env.make('move_task')
+env = env.make('speed_task')
 obs = env.reset()
 while True:
     env.render()
-    actions = np.random.randn(1, 8)
-    env.step(actions)
-
-    time.sleep(0.1)
+    env.step([1, 0.001])
 
