@@ -1,9 +1,11 @@
-from environments.mujoco.tasks.move_task import MoveTask
+from environments.mujoco.tasks.speed_task import SpeedTask
 from environments.mujoco.tasks.simple_task import SimpleTask
+from environments.mujoco.tasks.slow_task import SlowTask
 from gym.wrappers.time_limit import TimeLimit
 
-envs = {"move_task": TimeLimit(MoveTask(), max_episode_steps=200),
-        "simple_task": TimeLimit(SimpleTask(), max_episode_steps=1200)}
+envs = {"simple_task": TimeLimit(SimpleTask(), max_episode_steps=600),
+        "speed_task": TimeLimit(SpeedTask(), max_episode_steps=600),
+        "slow_task": TimeLimit(SlowTask(), max_episode_steps=600)}
 
 
 def make(name):

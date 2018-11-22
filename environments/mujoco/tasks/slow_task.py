@@ -4,10 +4,10 @@ import environments.mujoco.tasks.mujoco_gym as mujoco_env
 from gym.wrappers.time_limit import TimeLimit
 
 
-class SimpleTask(mujoco_env.MujocoEnv, utils.EzPickle):
+class SlowTask(mujoco_env.MujocoEnv, utils.EzPickle):
     def __init__(self):
         utils.EzPickle.__init__(self)
-        mujoco_env.MujocoEnv.__init__(self, 'simple_task.xml', 2)
+        mujoco_env.MujocoEnv.__init__(self, 'slow_task.xml', 2)
 
     def step(self, a):
         speed = a[0]
@@ -16,11 +16,15 @@ class SimpleTask(mujoco_env.MujocoEnv, utils.EzPickle):
         action_vector = [speed * np.cos(theta), speed * np.sin(theta), a[1]]
 
         vec = self.get_body_com("agent") - self.get_body_com("target")
-        reward_dist = - np.linalg.norm(vec)
+        reward_dist = -np.linalg.norm(vec)
         reward = reward_dist
         self.do_simulation(action_vector, self.frame_skip)
         ob = self._get_obs()
         done = False
+
+        if np.linalg.norm(vec) <= 0.02:
+            done = True
+            reward = -np.linalg.norm(self.sim.data.qvel.flat[:2])
         return ob, reward, done, dict(reward_dist=reward_dist)
 
     def viewer_setup(self):
@@ -44,10 +48,10 @@ class SimpleTask(mujoco_env.MujocoEnv, utils.EzPickle):
 
 
 if __name__ == "__main__":
-    env2 = SimpleTask()
-    env = TimeLimit(env2, max_episode_steps=500)
+    env2 = SlowTask()
+    env = TimeLimit(env2, max_episode_steps=50000)
     env.reset()
     while True:
         env.render()
-        obs, _, _, _ = env.step([0.2, 0.001])
-        print(obs)
+        obs, reward, _, _ = env.step([0.2, 0.001])
+        # print(reward)
