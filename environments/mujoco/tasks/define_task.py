@@ -12,7 +12,10 @@ class Task(mujoco_env.MujocoEnv, utils.EzPickle):
 
     def step(self, a):
         speed = a[0]
-        assert 0 <= speed <= 1
+        if speed > 1:
+            speed = 1
+        if speed < -1:
+            speed = -1
         theta = self.sim.data.qpos.flat[2]
         action_vector = [speed * np.cos(theta), speed * np.sin(theta), a[1]]
 

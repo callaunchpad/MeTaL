@@ -33,6 +33,6 @@
 	<actuator>
 		<motor ctrllimited="true" ctrlrange="-1.0 1.0" gear="100.0" joint="agent_x"/>
 		<motor ctrllimited="true" ctrlrange="-1.0 1.0" gear="100.0" joint="agent_y"/>
-		<motor ctrllimited="true" ctrlrange="0 1.0" gear="200.0" joint="viewer"/>
+		<motor ctrllimited="true" ctrlrange="-1.0 1.0" gear="200.0" joint="viewer"/>
 	</actuator>
 </mujoco>

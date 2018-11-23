@@ -1,8 +1,9 @@
-import environments.mujoco.env as env
+import environments.mujoco.env as mujoco_env
 
-env = env.make('speed_task')
+env = mujoco_env.make('speed_task')
 obs = env.reset()
 while True:
     env.render()
-    env.step([1, 0.001])
+    obs, _, _, _ = env.step([1, 0.001])
+    print(obs)
 

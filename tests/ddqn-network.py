@@ -1,4 +1,4 @@
-import gym
+import environments.mujoco.env as mujoco_env
 import numpy as np
 import tensorflow as tf
 import os
@@ -187,16 +187,14 @@ class CriticNetwork:
         sess.run(self.update_target_params)
 
 
-env = gym.make('Swimmer-v2')
-state_dim = env.observation_space.shape[0]
-action_dim = env.action_space.shape[0]
-action_bound = env.action_space.high[0]
+env = mujoco_env.make('simple_task')
+state_dim = 6
+action_dim = 2
+action_bound = 1
 
-print(state_dim, action_dim, action_bound, env.action_space.low)
-
-n_per_render = 2000
+n_per_render = 10
 n_per_train = 1
-n_episodes = 2000
+n_episodes = 1200
 batch_size = 64
 gamma = 0.99
 save_index = 0
@@ -220,19 +218,23 @@ with tf.Session() as session:
     critic.init_target(session)
 
     for episode in range(n_episodes):
+        if episode != 0 and episode % 100 == 0:
+            saver.save(session, "./run-" + str(save_index + 1) + ".ckpt")
+            save_index += 1
+
         obs = env.reset()
         total_reward = 0
         episode_length = 0
 
         while True:
-            # if episode % n_per_render == 0:
-            #     env.render()
+            if episode % n_per_render == 0:
+                env.render()
 
             if episode > 20:
                 action = actor.get_action(session, obs[np.newaxis, :])[0] + actor_noise()
                 # print(action)
             else:
-                action = env.action_space.sample()
+                action = np.random.uniform(low=-1, high=1, size=2)
 
             new_obs, reward, done, info = env.step(action)
             total_reward += reward
@@ -266,7 +268,6 @@ with tf.Session() as session:
                 print(episode, episode_length, total_reward, total_reward / episode_length)
                 break
 
-    saver.save(session, "./run-" + str(save_index + 1) + ".ckpt")
     while True:
         obs = env.reset()
         while True:
