@@ -15,6 +15,11 @@ class Reptile:
 		self.model = model
 		self.tasks = tasks
 		self._model_state = VariableState(self.sess, variables or tf.trainable_variables())
+		self.discount_rate = 0.95
+		self.reward_threshold = 0 # TODO
+		self.buffer = {}
+		for task in tasks:
+			self.replay_buffer[task] = []
 
 	def train(self):
 		steps = 200
@@ -31,6 +36,14 @@ class Reptile:
 				feed_dict = {self.model.s: states, self.model.a: actions, self.model.r: rewards}
 				self.sess.run(self.model.train_op, feed_dict=feed_dict)
 
+				# compute discounted accumulated reward
+				accumulated_reward = 0
+				for step in reversed(range(len(rewards))):
+					accumulated_reward = rewards[step] + accumulated_reward * self.discount_rate
+
+				# Add rollouts with good performance to replay buffer for task for importance sampling
+				if accumulated_reward > self.reward_threshold:
+					self.replay_buffer[task].append((states, actions, rewards))
 				print("Update: {}, Task: {}, Game Length: {}".format(i+step*single_task_steps,task_num, avg_len))
 
 			new_vars = self._model_state.export_variables()
@@ -51,8 +64,6 @@ class Reptile:
 		env_obs_n = 4
 		# environment action size
 		env_act_n = 2
-		discount_rate = 0.95
-
 		total_samples = 200
 
 		
@@ -82,7 +93,7 @@ class Reptile:
 		discounted_rewards = []
 		accumulated_reward = 0
 		for step in reversed(range(len(rewards))):
-			accumulated_reward = rewards[step] + accumulated_reward * discount_rate
+			accumulated_reward = rewards[step] + accumulated_reward * self.discount_rate
 			discounted_rewards.insert(0, accumulated_reward)
 		# normalize discounted rewards
 		discounted_rewards -= np.mean(discounted_rewards)
