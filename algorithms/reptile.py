@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import random
+import pickle
 """
 Classes and functions for metalearning with repile and sampling from tasks. 
 @Author Andrew Dickson
@@ -10,14 +11,23 @@ Classes and functions for metalearning with repile and sampling from tasks.
 
 
 class Reptile:
-	def __init__(self, session, model, tasks, variables=None):
+	def __init__(self, session, model, tasks, variables=None, load_buffer_from_pickle=False, save_buffer_to_pickle=False, load_buffer_pickle_path=None, save_buffer_pickle_path=None):
 		self.sess = session
 		self.model = model
 		self.tasks = tasks
 		self._model_state = VariableState(self.sess, variables or tf.trainable_variables())
 		self.discount_rate = 0.95
-		self.reward_threshold = 0 # TODO
-		self.buffer = {}
+		self.reward_threshold = float('inf') # TODO
+		self.replay_buffer = {}
+		self.save_buffer_to_pickle = save_buffer_to_pickle
+		self.load_buffer_pickle_path = load_buffer_pickle_path
+		self.save_buffer_pickle_path = save_buffer_pickle_path
+		if load_buffer_from_pickle:
+			try:
+				with open(load_buffer_pickle_path, 'rb') as buffer_file:
+					self.replay_buffer = pickle.load(buffer_file)
+			except:
+				self.replay_buffer = {}
 		for task in tasks:
 			self.replay_buffer[task] = []
 
@@ -50,6 +60,9 @@ class Reptile:
 
 			self._model_state.import_variables(interpolate_vars(old_vars, new_vars, meta_step_size))
 
+		if self.save_buffer_to_pickle:
+			with open(self.save_buffer_pickle_path, 'wb') as buffer_file:
+				pickle.dump(self.replay_buffer, buffer_file)
 
 
 	#Sample a set of states, actions, and rewards from the model for a given task

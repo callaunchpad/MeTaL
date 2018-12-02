@@ -5,3 +5,4 @@ images_evaluation/
 log/
 *.pyc
 .ipynb_checkpoints/
+*.pkl
