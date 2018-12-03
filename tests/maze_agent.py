@@ -15,7 +15,7 @@ from algorithms.policygrad import PGFFNetwork
 
 flags.DEFINE_string('save_dir', '/tmp/train_log', 'Directory to checkpoint to.')
 flags.DEFINE_integer('max_episodes', 150, 'Maximum number of episodes.')
-flags.DEFINE_integer('num_games', 500, 'Number of games played')
+flags.DEFINE_integer('num_games', 20, 'Number of games played')
 flags.DEFINE_float('learning_rate', .01, 'Learning rate.')
 flags.DEFINE_float('discount', .95, 'MDP discount rate.')
 
@@ -84,7 +84,8 @@ def train_maze_agent(maze, goal):
     sess = tf.Session()
     with sess.as_default():
         tf.global_variables_initializer().run()
-
+        game_length = 150
+        tf.summary_scalar("game_length", game_length)
         for game in range(n_games):
             obs = np.array([0, 0])
             # store states, actions, and rewards
@@ -118,8 +119,11 @@ def train_maze_agent(maze, goal):
             # train agent
             error = agent.train(states, actions, discounted_rewards, sess)
             print("Game: {}, Error: {}, Game Length: {}, Total Reward: {}".format(game, error, len(actions), sum(discounted_rewards)))
+            game_length = len(actions)
+
         print("finished training")
+
         def agent_distribution(state):
             return agent.action_dist(state[np.newaxis, :], sess)[0, :]
 
-        return agent_distribution
+        return agent_distribution, sess
