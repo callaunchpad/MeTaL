@@ -133,6 +133,26 @@ def main(argv):
     print(get_divergence(agent1, agent2, goal1, goal2, maze, start, num_walks, walk_len))
     print(get_divergence(agent2, agent2, goal2, goal2, maze, start, num_walks, walk_len))
 
+def gen_heatmap():
+    start = np.array([0, 0])
+    num_walks = 100
+    walk_len = 35
+
+    baseline_agent = train_maze_agent(maze, [9, 9])
+    baseline_goal = [9, 9]
+
+    agents = []
+    heatmap = np.zeros((10, 10))
+    for i in range(9):
+        for j in range(9):
+            goal = [i, j]
+            graph = tf.Graph()
+            with graph.as_default():
+                agent = train_maze_agent(maze, goal)
+            divergence = get_divergence(baseline_agent, agent, baseline_goal, 
+                goal, maze, start, num_walks, walk_len)
+    return heatmap
+
 
 if __name__ == "__main__":
     main(None)
