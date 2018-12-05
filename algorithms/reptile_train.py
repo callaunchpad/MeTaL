@@ -78,6 +78,10 @@ def main(argv):
 		reptile = Reptile(sess, agent, tasks, FLAGS)
 		reptile.train()
 
+
+		# Evaluate base task here
+
+
 		# Test meta learning on original game
 		for task in tasks:
 			reptile.load()
@@ -87,8 +91,16 @@ def main(argv):
 			states = []
 			actions = []
 			rewards = []
+
+			# place to add JSD differences between given task and base
+			divergences = []
+
 			for _ in range(n_max_iter):
 				action_dist = agent.action_dist(obs[np.newaxis, :], sess)
+
+				# append to divergences, need to come up with base task first.
+				# divergences.append( ((DiscreteJSD(p1, q1) ** (.5)) + (DiscreteJSD(p2, q2) ** (.5)))/2)
+
 				action = np.random.choice(np.arange(env_act_n), p=np.squeeze(action_dist))
 				new_obs, reward, done, info = task.step(action)
 
@@ -111,6 +123,8 @@ def main(argv):
 
 			# train agent
 			error = agent.train(states, actions, discounted_rewards, sess)
+
+
 			print("Gravity: {}, Length: {}, Error: {}, Game Length: {}, Total Reward: {}".format(task.unwrapped.gravity, task.unwrapped.length, error, len(actions), sum(rewards)))
 
 
