@@ -1,13 +1,9 @@
-import gym
-import time
-import numpy as np
+import environments.mujoco.env as mujoco_env
 
-env = gym.make('Ant-v2')
+env = mujoco_env.make('speed_task')
 obs = env.reset()
 while True:
     env.render()
-    actions = np.random.randn(1, 8)
-    env.step(actions)
-
-    time.sleep(0.1)
+    obs, _, _, _ = env.step([1, 0.001])
+    print(obs)
 
