@@ -1,11 +1,17 @@
-import environments.mujoco.env as mujoco_env
 import numpy as np
 import tensorflow as tf
 import os
+import sys
+import time
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, os.path.dirname(dir_path))
+
+import environments.mujoco.env as mujoco_env
 
 
 class OrnsteinUhlenbeckActionNoise:
-    def __init__(self, mu, sigma=0.3, theta=.15, dt=1e-2, x0=None):
+    def __init__(self, mu, sigma=0.3, theta=0.15, dt=1e-2, x0=None):
         self.theta = theta
         self.mu = mu
         self.sigma = sigma
@@ -143,12 +149,12 @@ class CriticNetwork:
             actions = tf.placeholder(tf.float32, [None, self.action_size])
             hidden1_layer = tf.layers.dense(inputs, self.n_hidden1, activation=tf.nn.relu)
 
-            # t_s = tf.layers.dense(hidden1_layer, self.n_hidden2)
-            # t_a = tf.layers.dense(actions, self.n_hidden2)
-            # hidden2_layer = t_s + t_a
-            # hidden2_layer = tf.nn.relu(hidden2_layer)
-            hidden2_layer = tf.layers.dense(tf.concat([hidden1_layer, actions], 1),
-                                            self.n_hidden2, activation=tf.nn.relu)
+            t_s = tf.layers.dense(hidden1_layer, self.n_hidden2)
+            t_a = tf.layers.dense(actions, self.n_hidden2)
+            hidden2_layer = tf.add(t_s, t_a)
+            hidden2_layer = tf.nn.relu(hidden2_layer)
+            # hidden2_layer = tf.layers.dense(tf.concat([hidden1_layer, actions], 1),
+            #                                 self.n_hidden2, activation=tf.nn.relu)
 
             outputs = tf.layers.dense(hidden2_layer, 1,
                                       kernel_initializer=tf.initializers.random_uniform(minval=-0.003, maxval=0.003))
@@ -174,11 +180,12 @@ class CriticNetwork:
         })
 
     def train(self, sess, inputs, actions, q_pred):
-        sess.run(self.train_op, feed_dict={
+        error, _ = sess.run([self.loss, self.train_op], feed_dict={
             self.inputs: inputs,
             self.actions: actions,
             self.q_pred: q_pred
         })
+        return error
 
     def init_target(self, sess):
         sess.run(self.target_init)
@@ -187,17 +194,23 @@ class CriticNetwork:
         sess.run(self.update_target_params)
 
 
-env = mujoco_env.make('simple_task')
-state_dim = 6
+task = 'speed_task'
+save_index = 11
+
+env = mujoco_env.make(task)
+state_dim = 9
 action_dim = 2
 action_bound = 1
-
+# env = gym.make("Reacher-v2")
+# state_dim = env.observation_space.shape[0]
+# action_dim = env.action_space.shape[0]
+# action_bound = env.action_space.high[0]
+action_repeat = 4
 n_per_render = 10
 n_per_train = 1
 n_episodes = 1200
 batch_size = 64
 gamma = 0.99
-save_index = 0
 
 memory = ReplayMemory(50000, batch_size)
 actor = ActorNetwork(state_dim, action_dim, action_bound, batch_size, 0.00005, 0.001)
@@ -208,73 +221,85 @@ with tf.Session() as session:
     tf.global_variables_initializer().run()
     saver = tf.train.Saver()
 
-    checkpoint = "./run-" + str(save_index) + ".ckpt"
+    checkpoint = task + "/run-" + str(save_index) + ".ckpt"
     if os.path.isfile(checkpoint + ".meta"):
         saver.restore(session, checkpoint)
     elif save_index != 0:
         raise Exception("Session data not found!!")
 
-    actor.init_target(session)
-    critic.init_target(session)
-
-    for episode in range(n_episodes):
-        if episode != 0 and episode % 100 == 0:
-            saver.save(session, "./run-" + str(save_index + 1) + ".ckpt")
-            save_index += 1
-
-        obs = env.reset()
-        total_reward = 0
-        episode_length = 0
-
-        while True:
-            if episode % n_per_render == 0:
-                env.render()
-
-            if episode > 20:
-                action = actor.get_action(session, obs[np.newaxis, :])[0] + actor_noise()
-                # print(action)
-            else:
-                action = np.random.uniform(low=-1, high=1, size=2)
-
-            new_obs, reward, done, info = env.step(action)
-            total_reward += reward
-            episode_length += 1
-
-            memory.append([obs, action, reward, new_obs, done])
-            # print(reward)
-            obs = new_obs
-
-            if episode_length % n_per_train == 0 and episode > 20:
-                mem_s, mem_a, mem_r, mem_s_, mem_done = memory.sample()
-                target_actions = actor.get_target_action(session, mem_s_)
-                target_q = critic.get_target_value(session, mem_s_, target_actions)
-
-                q_y = []
-                for i in range(len(target_q)):
-                    if mem_done[i]:
-                        q_y.append([mem_r[i]])
-                    else:
-                        q_y.append(target_q[i] * gamma + mem_r[i])
-                critic.train(session, mem_s, mem_a, q_y)
-
-                actor_pred = actor.get_action(session, mem_s)
-                critic_grads = critic.get_action_grads(session, mem_s, actor_pred)[0]
-
-                actor.train(session, mem_s, critic_grads)
-                actor.update_target(session)
-                critic.update_target(session)
-
-            if done:
-                print(episode, episode_length, total_reward, total_reward / episode_length)
-                break
+    # actor.init_target(session)
+    # critic.init_target(session)
+    #
+    # for episode in range(n_episodes):
+    #     if episode != 0 and episode % 300 == 0:
+    #         saver.save(session, "./run-" + str(save_index + 1) + ".ckpt")
+    #         save_index += 1
+    #
+    #     obs = env.reset()
+    #     total_reward = 0
+    #     episode_length = 0
+    #     total_critic_error = 0
+    #
+    #     while True:
+    #         # if episode % n_per_render == 0:
+    #         #     env.render()
+    #
+    #         if episode > 20:
+    #             action = actor.get_action(session, obs[np.newaxis, :])[0] + actor_noise()
+    #             # print(action)
+    #         else:
+    #             action = np.random.uniform(low=-1, high=1, size=2)
+    #
+    #         for i in range(action_repeat):
+    #             new_obs, reward, done, info = env.step(action)
+    #             if done:
+    #                 break
+    #
+    #         total_reward += reward
+    #         episode_length += 1
+    #
+    #         memory.append([obs, action, reward, new_obs, done])
+    #         # print(reward)
+    #         obs = new_obs
+    #
+    #         if episode_length % n_per_train == 0 and episode > 20:
+    #             mem_s, mem_a, mem_r, mem_s_, mem_done = memory.sample()
+    #             target_actions = actor.get_target_action(session, mem_s_)
+    #             target_q = critic.get_target_value(session, mem_s_, target_actions)
+    #
+    #             q_y = []
+    #             for i in range(len(target_q)):
+    #                 if mem_done[i]:
+    #                     q_y.append([mem_r[i]])
+    #                 else:
+    #                     q_y.append(target_q[i] * gamma + mem_r[i])
+    #             total_critic_error += critic.train(session, mem_s, mem_a, q_y)
+    #
+    #             actor_pred = actor.get_action(session, mem_s)
+    #             critic_grads = critic.get_action_grads(session, mem_s, actor_pred)[0]
+    #
+    #             actor.train(session, mem_s, critic_grads)
+    #             actor.update_target(session)
+    #             critic.update_target(session)
+    #
+    #         if done:
+    #             print(episode, episode_length, total_reward / episode_length, total_critic_error / episode_length)
+    #             break
 
     while True:
         obs = env.reset()
+        len_eps = 0
         while True:
             env.render()
             action = actor.get_action(session, obs[np.newaxis, :])[0]
             new_obs, reward, done, info = env.step(action)
+            # print(28 * np.linalg.norm(new_obs[2:4]))
+            len_eps += 1
+            print(reward)
+            # print(obs)
+            # print(critic.get_value(session, obs[np.newaxis, :], action[np.newaxis, :]), reward)
+            # print(action)
             obs = new_obs
 
-            if done:
+            if done or len_eps > 800:
                 break
